@@ -531,6 +531,21 @@ def calc_q(cluster_1, cluster_2):
 
     return true_pairs/float(true_pairs + false_pairs)
 
+def loadFastText(fasttext_filename):
+    fin = open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+    n, d = map(int, fin.readline().split())
+    vocab = []
+    embd = []
+    for line in fin:
+        row = line.rstrip().split(' ')
+        if len(row) > 1 and row[0] != '':
+            vocab.append(row[0])
+            embd.append(row[1:])   
+            
+    print('Loaded FastText!')
+    fin.close()
+    
+    return vocab,embd  
 
 def loadGloVe(glove_filename):
     '''
