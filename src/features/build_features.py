@@ -737,7 +737,7 @@ def main(args):
         # load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
    
     if config_dict["load_bert"]: # load BERT embeddings
-        bert_embedder = BERTEmbedding(config_dict["options_file"], config_dict["weight_file"])
+        bert_embedder = BERTEmbedding()
         logger.info("Loading ELMO embeddings...")
         load_elmo_embeddings(train_set, bert_embedder, set_pred_mentions=False)
         load_elmo_embeddings(dev_set, bert_embedder, set_pred_mentions=False)
