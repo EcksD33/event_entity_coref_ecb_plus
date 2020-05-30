@@ -596,7 +596,7 @@ def stringify_keys(d):
 
 def set_elmo_embed_to_mention(mention, sent_embeddings):
     '''
-    Sets the ELMo embeddings of a mention
+    Sets the embeddings of a mention
     :param mention: event/entity mention object
     :param sent_embeddings: the embedding for each word in the sentence produced by ELMo model
     :return:
@@ -606,13 +606,13 @@ def set_elmo_embed_to_mention(mention, sent_embeddings):
     mention.head_elmo_embeddings = torch.from_numpy(head_embeddings)
 
 
-def set_elmo_embeddings_to_mentions(elmo_embedder, sentence, set_pred_mentions):
+def set_elmo_embeddings_to_mentions(embedder, sentence, set_pred_mentions):
     '''
-     Sets the ELMo embeddings for all the mentions in the sentence
-    :param elmo_embedder: a wrapper object for ELMo model of Allen NLP
+     Sets the embeddings for all the mentions in the sentence
+    :param embedder: a wrapper embedder object
     :param sentence: a sentence object
     '''
-    avg_sent_embeddings = elmo_embedder.get_elmo_avg(sentence)
+    avg_sent_embeddings = embedder.get_embedding(sentence)
     event_mentions = sentence.gold_event_mentions
     entity_mentions = sentence.gold_entity_mentions
 
@@ -634,17 +634,17 @@ def set_elmo_embeddings_to_mentions(elmo_embedder, sentence, set_pred_mentions):
             set_elmo_embed_to_mention(entity, avg_sent_embeddings)  # set the head contextualized vector
 
 
-def load_elmo_embeddings(dataset, elmo_embedder, set_pred_mentions):
+def load_elmo_embeddings(dataset, embedder, set_pred_mentions):
     '''
     Sets the ELMo embeddings for all the mentions in the split
     :param dataset: an object represents a split (train/dev/test)
-    :param elmo_embedder: a wrapper object for ELMo model of Allen NLP
+    :param embedder: a wrapper object for contextualized embedder
     :return:
     '''
     for topic_id, topic in dataset.topics.items():
         for doc_id, doc in topic.docs.items():
             for sent_id, sent in doc.get_sentences().items():
-                set_elmo_embeddings_to_mentions(elmo_embedder, sent, set_pred_mentions)
+                set_elmo_embeddings_to_mentions(embedder, sent, set_pred_mentions)
 
 
 def main(args):
@@ -729,13 +729,20 @@ def main(args):
             logger.info('Test predicted mentions - loading predicates and their arguments ')
             find_left_and_right_mentions(test_set, is_gold=False)
 
-    if config_dict["load_elmo"]: # load ELMo embeddings
-        elmo_embedder = ElmoEmbedding(config_dict["options_file"], config_dict["weight_file"])
+    # if config_dict["load_elmo"]: # load ELMo embeddings
+        # elmo_embedder = ElmoEmbedding(config_dict["options_file"], config_dict["weight_file"])
+        # logger.info("Loading ELMO embeddings...")
+        # load_elmo_embeddings(train_set, elmo_embedder, set_pred_mentions=False)
+        # load_elmo_embeddings(dev_set, elmo_embedder, set_pred_mentions=False)
+        # load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
+   
+    if config_dict["load_bert"]: # load BERT embeddings
+        bert_embedder = BERTEmbedding(config_dict["options_file"], config_dict["weight_file"])
         logger.info("Loading ELMO embeddings...")
-        load_elmo_embeddings(train_set, elmo_embedder, set_pred_mentions=False)
-        load_elmo_embeddings(dev_set, elmo_embedder, set_pred_mentions=False)
-        load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
-
+        load_elmo_embeddings(train_set, bert_embedder, set_pred_mentions=False)
+        load_elmo_embeddings(dev_set, bert_embedder, set_pred_mentions=False)
+        load_elmo_embeddings(test_set, bert_embedder, set_pred_mentions=True)
+        
     logger.info('Storing processed data...')
     with open(os.path.join(args.output_path,'training_data'), 'wb') as f:
         cPickle.dump(train_set, f)
