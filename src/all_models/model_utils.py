@@ -532,7 +532,7 @@ def calc_q(cluster_1, cluster_2):
     return true_pairs/float(true_pairs + false_pairs)
 
 def loadFastText(fasttext_filename):
-    fin = open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+    fin = open(fasttext_filename, 'r', encoding='utf-8', newline='\n', errors='ignore')
     n, d = map(int, fin.readline().split())
     vocab = []
     embd = []
