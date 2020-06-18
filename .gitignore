@@ -1,0 +1,10 @@
+
+out_data/
+
+out_features/
+
+out_test/
+
+out_train/
+
+trained_model_n_data/
