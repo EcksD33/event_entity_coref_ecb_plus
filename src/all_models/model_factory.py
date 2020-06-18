@@ -119,8 +119,8 @@ def load_model_embeddings(config_dict):
     logging.info('Loading word embeddings...')
 
     # load pre-trained word embeddings
-    # vocab, embd = loadGloVe(config_dict["glove_path"])
-    vocab, embd = loadFastText(config_dict["ft_path"])
+    vocab, embd = loadGloVe(config_dict["glove_path"])
+    # vocab, embd = loadFastText(config_dict["ft_path"])
     word_embeds = np.asarray(embd, dtype=np.float64)
 
     i = 0
