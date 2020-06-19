@@ -347,7 +347,9 @@ def get_char_embed(word, model, device):
 
     return char_vec
 
-
+import fasttext
+import fasttext.util
+ft = fasttext.load_model('cc.en.300.bin')
 def find_word_embed(word, model, device):
     '''
     Given a word (string), this function fetches its word embedding (or unknown embeddings for
@@ -359,17 +361,8 @@ def find_word_embed(word, model, device):
     '''
     word_to_ix = model.word_to_ix
     word = clean_word(word)
-    if word in word_to_ix:
-        word_ix = [word_to_ix[word]]
-    else:
-        lower_word = word.lower()
-        if lower_word in word_to_ix:
-            word_ix = [word_to_ix[lower_word]]
-        else:
-            word_ix = [word_to_ix['unk']]
-
-    word_tensor = model.embed(torch.tensor(word_ix,dtype=torch.long).to(device))
-
+    emb = ft.get_word_vector(word)
+    word_tensor = torch.tensor([emb],dtype=torch.float).to(device)
     return word_tensor
 
 
@@ -532,6 +525,7 @@ def calc_q(cluster_1, cluster_2):
     return true_pairs/float(true_pairs + false_pairs)
 
 def loadFastText(fasttext_filename):
+    print('Loading FastText!')
     fin = open(fasttext_filename, 'r', encoding='utf-8', newline='\n', errors='ignore')
     n, d = map(int, fin.readline().split())
     vocab = []
@@ -541,7 +535,9 @@ def loadFastText(fasttext_filename):
         if len(row) > 1 and row[0] != '':
             vocab.append(row[0])
             embd.append(row[1:])   
-            
+        break
+    vocab.append("unk")
+    embd.append(["0" for x in range(0,300)])   
     print('Loaded FastText!')
     fin.close()
     

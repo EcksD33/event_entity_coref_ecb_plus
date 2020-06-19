@@ -8,3 +8,7 @@ out_features/
 out_train/
 
 trained_model_n_data/
+
+cc.en.300.bin
+
+*.pyc
