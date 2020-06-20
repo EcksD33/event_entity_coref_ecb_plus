@@ -108,12 +108,17 @@ def train_model(train_set, dev_set):
     entity_best_dev_f1 = 0
     best_event_epoch = 0
     best_entity_epoch = 0
+    
+    start_epoch = 1
+    if(os.path.isfile(os.path.join(args.out_dir, 'cd_event_model_state'))):
+        cd_event_model, cd_event_optimizer, start_epoch, event_best_dev_f1   = load_training_checkpoint(cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
+        cd_entity_model, cd_entity_optimizer, start_epoch, entity_best_dev_f1 = load_training_checkpoint(cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)
 
     patient_counter = 0
 
     orig_event_th = config_dict["event_merge_threshold"]
     orig_entity_th = config_dict["entity_merge_threshold"]
-    for epoch in range(1, config_dict["epochs"]):
+    for epoch in range(start_epoch, config_dict["epochs"]):
         logging.info('Epoch {}:'.format(str(epoch)))
         print('Epoch {}:'.format(str(epoch)))
         topics_counter = 0
