@@ -555,7 +555,7 @@ def loadGloVe(glove_filename):
     '''
     vocab = []
     embd = []
-    file = open(glove_filename,'r')
+    file = open(glove_filename,'r', encoding='utf-8')
     for line in file.readlines():
         row = line.strip().split(' ')
         if len(row) > 1:
