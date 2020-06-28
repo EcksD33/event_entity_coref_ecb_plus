@@ -10,3 +10,7 @@ out_train/
 trained_model_n_data/
 
 *.pyc
+
+prf
+
+cc.en.300.bin

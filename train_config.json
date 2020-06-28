@@ -1,5 +1,5 @@
 {
-    "batch_size": 16,
+    "batch_size": 64,
     "char_pretrained_path": "data/external/char_embed/glove.840B.300d-char.npy",
     "char_rep_size": 50,
     "char_vocab_path": "data/external/char_embed/glove.840B.300d-char.vocab",
