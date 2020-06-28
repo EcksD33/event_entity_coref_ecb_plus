@@ -109,10 +109,11 @@ def train_model(train_set, dev_set):
     best_event_epoch = 0
     best_entity_epoch = 0
     
+    patient_counter = 0    
     start_epoch = 1
     if(os.path.isfile(os.path.join(args.out_dir, 'cd_event_model_state'))):
-        cd_event_model, cd_event_optimizer, start_epoch, event_best_dev_f1   = load_training_checkpoint(cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
-        cd_entity_model, cd_entity_optimizer, start_epoch, entity_best_dev_f1 = load_training_checkpoint(cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)
+        cd_event_model, cd_event_optimizer, patient_counter, start_epoch, event_best_dev_f1   = load_training_checkpoint(cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
+        cd_entity_model, cd_entity_optimizer, patient_counter, start_epoch, entity_best_dev_f1 = load_training_checkpoint(cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)
 
     patient_counter = 0
 
@@ -183,7 +184,6 @@ def train_model(train_set, dev_set):
         logging.info('Testing models on dev set...')
 
         threshold_list = config_dict["dev_th_range"]
-        improved = False
         best_event_f1_for_th = 0
         best_entity_f1_for_th = 0
 
@@ -234,11 +234,13 @@ def train_model(train_set, dev_set):
         if not improved:
             patient_counter += 1
 
-        save_training_checkpoint(epoch, cd_event_model, cd_event_optimizer, event_best_dev_f1,
+        save_training_checkpoint(patient_counter, epoch, cd_event_model, cd_event_optimizer, event_best_dev_f1,
                                  filename=os.path.join(args.out_dir, 'cd_event_model_state'))
-        save_training_checkpoint(epoch, cd_entity_model, cd_entity_optimizer, entity_best_dev_f1,
+        save_training_checkpoint(patient_counter, epoch, cd_entity_model, cd_entity_optimizer, entity_best_dev_f1,
                                  filename=os.path.join(args.out_dir, 'cd_entity_model_state'))
 
+        logging.info('patience : '+str(patient_counter))
+        print('patience : '+str(patient_counter))
         if patient_counter >= config_dict["patient"]:
             logging.info('Early Stopping!')
             print('Early Stopping!')
@@ -329,7 +331,7 @@ def save_summary(best_event_score,best_entity_score, best_event_epoch,best_entit
                                                ,best_entity_epoch, total_epochs))
 
 
-def save_training_checkpoint(epoch, model, optimizer, best_f1, filename):
+def save_training_checkpoint(patient_counter, epoch, model, optimizer, best_f1, filename):
     '''
     Saves model's checkpoint after each epoch
     :param epoch: epoch number
@@ -338,8 +340,8 @@ def save_training_checkpoint(epoch, model, optimizer, best_f1, filename):
     :param best_f1: the best B-cubed F1 score so far
     :param filename: the filename of the checkpoint file
     '''
-    state = {'epoch': epoch + 1, 'state_dict': model.state_dict(),
-             'optimizer': optimizer.state_dict(), 'best_f1': best_f1 }
+    state = {'patient_counter': patient_counter, 'epoch': epoch + 1, 'state_dict': model.state_dict(),
+             'optimizer': optimizer.state_dict(), 'best_f1': best_f1}
     torch.save(state, filename)
 
 
@@ -355,6 +357,7 @@ def load_training_checkpoint(model, optimizer, filename, device):
     print("Loading checkpoint '{}'".format(filename))
     checkpoint = torch.load(filename)
     start_epoch = checkpoint['epoch']
+    patient_counter = checkpoint['patient_counter']
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     best_f1 = checkpoint['best_f1']
@@ -367,7 +370,7 @@ def load_training_checkpoint(model, optimizer, filename, device):
             if isinstance(v, torch.Tensor):
                 state[k] = v.to(device)
 
-    return model, optimizer, start_epoch, best_f1
+    return model, optimizer, patient_counter, start_epoch, best_f1
 
 
 def main():
