@@ -50,7 +50,7 @@ class CDCorefScorer(nn.Module):
                                  bidirectional=False)
 
         # binary features for coreferring arguments/predicates
-        self.coref_role_embeds = nn.Embedding(2,feature_size)
+        self.coref_role_embeds = nn.Embedding(16,feature_size)
 
         self.use_mult = use_mult
         self.use_diff = use_diff
