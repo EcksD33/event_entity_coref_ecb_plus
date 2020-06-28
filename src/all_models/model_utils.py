@@ -1005,7 +1005,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         head = mention.mention_head
         head_tensor = find_word_embed(head, model, device)
         char_embeds = get_char_embed(head, model, device)
-        mention_tensor = torch.cat([span_tensor, head_tensor, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
     else:
         mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
         mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
@@ -1454,7 +1454,6 @@ def merge(clusters, cluster_pairs, other_clusters,model, device, topic_docs, epo
         if max_score > threshold:         
             print('epoch {} topic {}/{} - merge {} clusters with score {}'.format(
                 epoch, topics_counter, topics_num, mode, str(max_score)))
-                str(max_pair[1])))
             logging.info('epoch {} topic {}/{} - merge {} clusters with score {} clusters : {} {}'.format(
                 epoch, topics_counter, topics_num, mode, str(max_score), str(max_pair[0]),
                 str(max_pair[1])))
