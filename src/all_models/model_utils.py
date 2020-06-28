@@ -404,6 +404,13 @@ def is_system_coref(mention_id_1, mention_id_2, clusters):
         return True
     return False
 
+def get_idx_binary(bin):
+    value = 0
+    for i in range(len(bin)):
+        digit = bin.pop()
+        if digit == '1':
+            value = value + pow(2, i)
+    return value
 
 def create_args_features_vec(mention_1, mention_2 ,entity_clusters, device, model):
     '''
@@ -423,29 +430,21 @@ def create_args_features_vec(mention_1, mention_2 ,entity_clusters, device, mode
     coref_loc = 0
     coref_tmp = 0
 
-    if coref_a0 == 0 and mention_1.arg0 is not None and mention_2.arg0 is not None:
+    if mention_1.arg0 is not None and mention_2.arg0 is not None:
         if is_system_coref(mention_1.arg0[1], mention_2.arg0[1],entity_clusters):
             coref_a0 = 1
-    if coref_a1 == 0 and mention_1.arg1 is not None and mention_2.arg1 is not None:
+    if mention_1.arg1 is not None and mention_2.arg1 is not None:
         if is_system_coref(mention_1.arg1[1], mention_2.arg1[1],entity_clusters):
             coref_a1 = 1
-    if coref_loc == 0 and mention_1.amloc is not None and mention_2.amloc is not None:
+    if mention_1.amloc is not None and mention_2.amloc is not None:
         if is_system_coref(mention_1.amloc[1], mention_2.amloc[1],entity_clusters):
             coref_loc = 1
-    if coref_tmp == 0 and mention_1.amtmp is not None and mention_2.amtmp is not None:
+    if mention_1.amtmp is not None and mention_2.amtmp is not None:
         if is_system_coref(mention_1.amtmp[1], mention_2.amtmp[1],entity_clusters):
             coref_tmp = 1
-
-    arg0_tensor = model.coref_role_embeds(torch.tensor(coref_a0,
-                                                       dtype=torch.long).to(device)).view(1,-1)
-    arg1_tensor = model.coref_role_embeds(torch.tensor(coref_a1,
-                                                       dtype=torch.long).to(device)).view(1,-1)
-    amloc_tensor = model.coref_role_embeds(torch.tensor(coref_loc,
-                                                        dtype=torch.long).to(device)).view(1,-1)
-    amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_tmp,
-                                                        dtype=torch.long).to(device)).view(1,-1)
-
-    args_features_tensor = torch.cat([arg0_tensor,arg1_tensor, amloc_tensor,amtmp_tensor],1)
+    
+    idx = get_idx_binary([coref_a0, coref_a1, coref_loc, coref_tmp])    
+    args_features_tensor = model.coref_role_embeds(torch.tensor(idx, dtype=torch.long).to(device)).view(1,-1)
 
     return args_features_tensor
 
@@ -484,17 +483,11 @@ def create_predicates_features_vec(mention_1, mention_2, event_clusters, device,
             if coref_pred_tmp == 0 and rel_1 == 'AM-TMP' and rel_2 == 'AM-TMP':
                 if is_system_coref(predicate_id_1[1], predicate_id_2[1], event_clusters):
                     coref_pred_tmp = 1
+            if(1 == coref_pred_tmp == coref_pred_loc == coref_pred_a1 == coref_pred_a0):
+                break
 
-    arg0_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a0,
-                                                       dtype=torch.long).to(device)).view(1,-1)
-    arg1_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a1,
-                                                       dtype=torch.long).to(device)).view(1,-1)
-    amloc_tensor = model.coref_role_embeds(torch.tensor(coref_pred_loc,
-                                                        dtype=torch.long).to(device)).view(1,-1)
-    amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_pred_tmp,
-                                                        dtype=torch.long).to(device)).view(1,-1)
-
-    predicates_features_tensor = torch.cat([arg0_tensor, arg1_tensor, amloc_tensor, amtmp_tensor],1)
+    idx = get_idx_binary([coref_pred_a0, coref_pred_a1, coref_pred_loc, coref_pred_tmp])    
+    predicates_features_tensor = model.coref_role_embeds(torch.tensor(idx, dtype=torch.long).to(device)).view(1,-1)
 
     return predicates_features_tensor
 
@@ -1010,12 +1003,12 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
     '''
 
     span_tensor = mention.head_elmo_embeddings.to(device).view(1,-1)
-
+    mention_span_rep = None
     if is_event:
         head = mention.mention_head
         head_tensor = find_word_embed(head, model, device)
         char_embeds = get_char_embed(head, model, device)
-        mention_tensor = torch.cat([head_tensor, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
     else:
         mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
         mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
@@ -1028,9 +1021,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         if len(mention_embeds) > 0:
             mention_bow = mention_bow / float(len(mention_embeds))
 
-        mention_tensor = torch.cat([mention_bow, char_embeds], 1)
-
-    mention_span_rep = torch.cat([span_tensor, mention_tensor], 1)
+        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds], 1)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:
@@ -1092,37 +1083,23 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
                                                   is_event, requires_grad)
     span_rep_1 = mention_1.span_rep
     span_rep_2 = mention_2.span_rep
-
-    if use_args_feats:
-        mention_1_tensor = torch.cat([span_rep_1, mention_1.arg0_vec, mention_1.arg1_vec,
-                                      mention_1.loc_vec, mention_1.time_vec], 1)
-        mention_2_tensor = torch.cat([span_rep_2, mention_2.arg0_vec,mention_2.arg1_vec,
-                                      mention_2.loc_vec,mention_2.time_vec], 1)
-
+    
+    binary_feats = None
+    if is_event:
+        binary_feats = create_args_features_vec(mention_1, mention_2, other_clusters,
+                                                device, model)
     else:
-        mention_1_tensor = span_rep_1
-        mention_2_tensor = span_rep_2
-
-    if model.use_mult and model.use_diff:
-        mention_pair_tensor = torch.cat([mention_1_tensor, mention_2_tensor,
-                                         mention_1_tensor - mention_2_tensor,
-                                         mention_1_tensor * mention_2_tensor], 1)
-    elif model.use_mult:
-        mention_pair_tensor = torch.cat([mention_1_tensor, mention_2_tensor,
-                                         mention_1_tensor * mention_2_tensor], 1)
-    elif model.use_diff:
-        mention_pair_tensor = torch.cat([mention_1_tensor, mention_2_tensor,
-                                         mention_1_tensor - mention_2_tensor], 1)
-
-    if use_binary_feats:
-        if is_event:
-            binary_feats = create_args_features_vec(mention_1, mention_2, other_clusters,
-                                                    device, model)
-        else:
-            binary_feats = create_predicates_features_vec(mention_1, mention_2, other_clusters,
-                                                          device, model)
-
-        mention_pair_tensor = torch.cat([mention_pair_tensor,binary_feats], 1)
+        binary_feats = create_predicates_features_vec(mention_1, mention_2, other_clusters,
+                                                      device, model)
+    span_mul = span_rep_1*span_rep_2                                                        
+    arg0_vec_mul = mention_1.arg0_vec*mention_2.arg0_vec                                                        
+    arg1_vec_mul = mention_1.arg1_vec*mention_2.arg1_vec                                                        
+    time_vec_mul = mention_1.time_vec*mention_2.time_vec                                                        
+    loc_vec_mul = mention_1.loc_vec*mention_2.loc_vec     
+    mention_pair_tensor = torch.cat([span_rep_1, mention_1.arg0_vec, mention_1.arg1_vec, mention_1.loc_vec, mention_1.time_vec,
+                                     span_rep_2, mention_2.arg0_vec, mention_2.arg1_vec, mention_2.loc_vec, mention_2.time_vec,
+                                     span_mul, arg0_vec_mul, arg1_vec_mul, time_vec_mul, loc_vec_mul,
+                                     binary_feats], 1)
 
     mention_pair_tensor = mention_pair_tensor.to(device)
 
@@ -1373,23 +1350,12 @@ def merge_clusters(pair_to_merge, clusters ,other_clusters, is_event,
         cluster_pair = (pair[0], pair[1])
         if cluster_i in cluster_pair or cluster_j in cluster_pair:
             del curr_pairs_dict[pair]
-
+            
     clusters.remove(cluster_i)
     clusters.remove(cluster_j)
     clusters.append(new_cluster)
-
-    if is_event:
-        lex_vec = create_event_cluster_bow_lexical_vec(new_cluster, model, device,
-                                                       use_char_embeds=True,
-                                                       requires_grad=False)
-    else:
-        lex_vec = create_entity_cluster_bow_lexical_vec(new_cluster, model, device,
-                                                        use_char_embeds=True,
-                                                        requires_grad=False)
-
-    new_cluster.lex_vec = lex_vec
-
-    # create arguments features for the new cluster
+    
+    update_lexical_vectors([new_cluster], model, device ,is_event, False)
     update_args_feature_vectors([new_cluster], other_clusters, model, device, is_event)
 
     new_pairs = []
@@ -1433,8 +1399,8 @@ def assign_score(cluster_pair, model, device, topic_docs, is_event, use_args_fea
                                                        use_binary_feats=use_binary_feats,
                                                        other_clusters=other_clusters)
 
-        model_scores = model(batch_tensor).detach().cpu().numpy()
-        scores_sum += float(np.sum(model_scores))
+        model_scores = model(batch_tensor).detach()
+        scores_sum += float(model_scores.sum())
         pairs_count += len(model_scores)
 
         del batch_tensor
@@ -1489,9 +1455,8 @@ def merge(clusters, cluster_pairs, other_clusters,model, device, topic_docs, epo
         max_pair, max_score = key_with_max_val(pairs_dict)
 
         if max_score > threshold:
-            print('epoch {} topic {}/{} - merge {} clusters with score {} clusters : {} {}'.format(
-                epoch, topics_counter, topics_num, mode, str(max_score), str(max_pair[0]),
-                str(max_pair[1])))
+            print('epoch {} topic {}/{} - merge {} clusters with score {}'.format(
+                epoch, topics_counter, topics_num, mode, str(max_score)))
             logging.info('epoch {} topic {}/{} - merge {} clusters with score {} clusters : {} {}'.format(
                 epoch, topics_counter, topics_num, mode, str(max_score), str(max_pair[0]),
                 str(max_pair[1])))

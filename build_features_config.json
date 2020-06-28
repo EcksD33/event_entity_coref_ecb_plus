@@ -22,10 +22,10 @@
   "relaxed_match_with_gold_mention": false,
 
   "load_predicted_mentions": false,
-  "load_elmo": false,
-  "load_bert": true,
-  "options_file": "/home/nlp/barhoms/elmo/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json",
-  "weight_file": "/home/nlp/barhoms/elmo/elmo_2x4096_512_2048cnn_2xhighway_5.5B_weights.hdf5"
+  "load_elmo": true,
+  "load_bert": false,
+  "options_file": "trained_model_n_data/elmo_options.json",
+  "weight_file": "trained_model_n_data/elmo_weights.hdf5"
 
 
 }

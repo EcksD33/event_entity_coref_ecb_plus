@@ -15,7 +15,7 @@ class ElmoEmbedding(object):
         self.embedder = ElmoEmbedder(options_file, weight_file)
         logger.info('Elmo Embedding module loaded successfully')
 
-    def get_elmo_avg(self, sentence):
+    def get_embedding(self, sentence):
         '''
         This function gets a sentence object and returns and ELMo embeddings of
         each word in the sentences (specifically here, we average over the 3 ELMo layers).

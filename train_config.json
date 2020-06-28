@@ -1,15 +1,15 @@
 {
-    "batch_size": 16,
+    "batch_size": 64,
     "char_pretrained_path": "data/external/char_embed/glove.840B.300d-char.npy",
     "char_rep_size": 50,
     "char_vocab_path": "data/external/char_embed/glove.840B.300d-char.vocab",
-    "dev_path": "trained_model_n_data/processed/full_swirl_ecb/dev_data",
+    "dev_path": "out_features/dev_data",
     "dev_th_range": [0.5, 0.6],
 
     "entity_merge_threshold": 0.5,
     "epochs": 50,
     "event_merge_threshold": 0.5,
-    "feature_size": 50,
+    "feature_size": 200,
     "glove_path": "trained_model_n_data/glove.6B.300d.txt",
     "ft_path": "trained_model_n_data/wiki-news-300d-1M.vec",
     "gpu_num": 0,
@@ -31,7 +31,7 @@
 
     "test_use_gold_mentions": true,
     "train_init_wd_entity_with_gold": true,
-    "train_path": "trained_model_n_data/processed/full_swirl_ecb/training_data",
+    "train_path": "out_features/training_data",
     "use_args_feats": true,
     "use_binary_feats": true,
     "use_diff": false,
