@@ -201,38 +201,23 @@ def train_model(train_set, dev_set):
         else:
             best_saved_cd_entity_model = cd_entity_model
 
-        for event_threshold in threshold_list:
-            for entity_threshold in threshold_list:
-                config_dict["event_merge_threshold"] = event_threshold
-                config_dict["entity_merge_threshold"] = entity_threshold
-                print('Testing models on dev set with threshold={}'.format((event_threshold,entity_threshold)))
-                logging.info('Testing models on dev set with threshold={}'.format((event_threshold,entity_threshold)))
+        event_threshold  = config_dict["event_merge_threshold"]
+        entity_threshold = config_dict["entity_merge_threshold"]
+        print('Testing models on dev set'.format((event_threshold,entity_threshold)))
+        logging.info('Testing models on dev set'.format((event_threshold,entity_threshold)))
 
-                # test event coref on dev
-                event_f1, _ = test_models(dev_set, cd_event_model, best_saved_cd_entity_model, device,
-                                                  config_dict, write_clusters=False, out_dir=args.out_dir,
-                                                  doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
+        # test event coref on dev
+        event_f1, _ = test_models(dev_set, cd_event_model, best_saved_cd_entity_model, device,
+                                          config_dict, write_clusters=False, out_dir=args.out_dir,
+                                          doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
 
-                # test entity coref on dev
-                _, entity_f1 = test_models(dev_set, best_saved_cd_event_model, cd_entity_model, device,
-                                                  config_dict, write_clusters=False, out_dir=args.out_dir,
-                                                  doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
+        # test entity coref on dev
+        _, entity_f1 = test_models(dev_set, best_saved_cd_event_model, cd_entity_model, device,
+                                          config_dict, write_clusters=False, out_dir=args.out_dir,
+                                          doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)     
+        save_epoch_f1(event_f1, entity_f1, epoch, 0.5, 0.5)  
 
-                if event_f1 > best_event_f1_for_th:
-                    best_event_f1_for_th = event_f1
-                    best_event_th = (event_threshold,entity_threshold)
-
-                if entity_f1 > best_entity_f1_for_th:
-                    best_entity_f1_for_th = entity_f1
-                    best_entity_th = (event_threshold,entity_threshold)
-
-        event_f1 = best_event_f1_for_th
-        entity_f1 = best_entity_f1_for_th
-        save_epoch_f1(event_f1, entity_f1, epoch, best_event_th, best_entity_th)
-
-        config_dict["event_merge_threshold"] = orig_event_th
-        config_dict["entity_merge_threshold"] = orig_entity_th
-
+        improved = False
         if event_f1 > event_best_dev_f1:
             event_best_dev_f1 = event_f1
             best_event_epoch = epoch
