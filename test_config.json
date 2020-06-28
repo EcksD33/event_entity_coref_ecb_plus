@@ -1,4 +1,4 @@
-{"test_path":"trained_model_n_data/processed/full_swirl_ecb/test_data",
+{"test_path":"out_features/test_data",
 
   "cd_event_model_path": "trained_model_n_data/cd_event_best_model",
   "cd_entity_model_path": "trained_model_n_data/cd_entity_best_model",
