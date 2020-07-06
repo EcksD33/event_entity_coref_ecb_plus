@@ -350,6 +350,22 @@ def get_char_embed(word, model, device):
 import fasttext
 import fasttext.util
 ft = fasttext.load_model('cc.en.300.bin')
+fasttext.util.reduce_model(ft, 150)
+def get_fasttext_embed(word, model, device):
+    '''
+    Given a word (string), this function fetches its word embedding (or unknown embeddings for
+    OOV words)
+    :param word: a word (string)
+    :param model: CDCorefScorer object
+    :param device: Pytorch device (gpu/cpu)
+    :return: a word vector
+    '''
+            
+    word = clean_word(word)
+    emb = ft.get_word_vector(word)
+    ft_word_tensor = torch.tensor([emb],dtype=torch.float).to(device)      
+    return ft_word_tensor
+    
 def find_word_embed(word, model, device):
     '''
     Given a word (string), this function fetches its word embedding (or unknown embeddings for
@@ -359,11 +375,20 @@ def find_word_embed(word, model, device):
     :param device: Pytorch device (gpu/cpu)
     :return: a word vector
     '''
+    
     word_to_ix = model.word_to_ix
     word = clean_word(word)
-    emb = ft.get_word_vector(word)
-    word_tensor = torch.tensor([emb],dtype=torch.float).to(device)
-    return word_tensor
+    if word in word_to_ix:
+        word_ix = [word_to_ix[word]]
+    else:
+        lower_word = word.lower()
+        if lower_word in word_to_ix:
+            word_ix = [word_to_ix[lower_word]]
+        else:
+            word_ix = [word_to_ix['unk']]
+
+    gl_word_tensor = model.embed(torch.tensor(word_ix,dtype=torch.long).to(device))    
+    return gl_word_tensor
 
 
 def find_mention_cluster(mention_id, clusters):
@@ -738,22 +763,23 @@ def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_e
     (average of mention's span vectors in the cluster)
     '''
     if use_char_embeds:
-        bow_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
+        bow_vec = torch.zeros(model.embedding_dim + model.fasttext_dim + model.char_hidden_dim,
                               requires_grad=requires_grad).to(device).view(1, -1)
     else:
-        bow_vec = torch.zeros(model.embedding_dim ,
+        bow_vec = torch.zeros(model.embedding_dim +model.fasttext_dim ,
                               requires_grad=requires_grad).to(device).view(1, -1)
     for event_mention in event_cluster.mentions.values():
         # creating lexical vector using the head word of each event mention in the cluster
         head = event_mention.mention_head
-        head_tensor = find_word_embed(head, model, device)
+        head_tensor_glove = find_word_embed(head, model, device)
+        head_tensor_ft = get_fasttext_embed(head, model, device)
         if use_char_embeds:
             char_tensor = get_char_embed(head, model, device)
             if not requires_grad:
                 char_tensor = char_tensor.detach()
-            cat_tensor = torch.cat([head_tensor, char_tensor], 1)
+            cat_tensor = torch.cat([head_tensor_glove,head_tensor_ft, char_tensor], 1)
         else:
-            cat_tensor = head_tensor
+            cat_tensor = torch.cat([head_tensor_glove,head_tensor_ft], 1)
         bow_vec += cat_tensor
 
     return bow_vec / len(event_cluster.mentions.keys())
@@ -774,33 +800,37 @@ def create_entity_cluster_bow_lexical_vec(entity_cluster, model, device, use_cha
     (average of mention's span vectors in the cluster)
     '''
     if use_char_embeds:
-        bow_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
+        bow_vec = torch.zeros(model.embedding_dim+ model.fasttext_dim  + model.char_hidden_dim,
                               requires_grad=requires_grad).to(device).view(1, -1)
     else:
-        bow_vec = torch.zeros(model.embedding_dim,
+        bow_vec = torch.zeros(model.embedding_dim+model.fasttext_dim ,
                               requires_grad=requires_grad).to(device).view(1, -1)
     for entity_mention in entity_cluster.mentions.values():
         # creating lexical vector using each entity mention in the cluster
-        mention_bow = torch.zeros(model.embedding_dim,
+        mention_gl = torch.zeros(int(model.embedding_dim ),
                                   requires_grad=requires_grad).to(device).view(1, -1)
-        mention_embeds = [find_word_embed(token, model, device)
+        mention_ft = torch.zeros(int(model.fasttext_dim ),
+                                  requires_grad=requires_grad).to(device).view(1, -1)
+        mention_embeds = [(find_word_embed(token, model, device),get_fasttext_embed(token, model, device))
                           for token in entity_mention.get_tokens()
                           if not is_stop(token)]
         if use_char_embeds:
             char_embeds = get_char_embed(entity_mention.mention_str, model, device)
 
-        for word_tensor in mention_embeds:
-            mention_bow += word_tensor
+        for (gl_embed,ft_embed) in mention_embeds:
+            mention_gl += gl_embed
+            mention_ft += ft_embed
 
-        mention_bow /= len(entity_mention.get_tokens())
+        mention_gl /= len(entity_mention.get_tokens())
+        mention_ft /= len(entity_mention.get_tokens())
 
         if use_char_embeds:
             if not requires_grad:
                 char_embeds = char_embeds.detach()
 
-            cat_tensor = torch.cat([mention_bow, char_embeds], 1)
+            cat_tensor = torch.cat([mention_gl,mention_ft,char_embeds], 1)
         else:
-            cat_tensor = mention_bow
+            cat_tensor = torch.cat([mention_gl,mention_ft, char_embeds], 1)
         bow_vec += cat_tensor
 
     return bow_vec / len(entity_cluster.mentions.keys())
@@ -1004,22 +1034,26 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
     mention_span_rep = None
     if is_event:
         head = mention.mention_head
-        head_tensor = find_word_embed(head, model, device)
+        head_gl = find_word_embed(head, model, device)
+        head_ft = get_fasttext_embed(head, model, device)
         char_embeds = get_char_embed(head, model, device)
-        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, head_gl,head_ft, char_embeds], 1)
     else:
-        mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
-        mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
+        mention_gl = torch.zeros(int(model.embedding_dim ), requires_grad=requires_grad).to(device).view(1, -1)
+        mention_ft = torch.zeros(int(model.fasttext_dim ), requires_grad=requires_grad).to(device).view(1, -1)
+        mention_embeds = [(find_word_embed(token, model, device),get_fasttext_embed(token, model, device)) for token in mention.get_tokens()
                           if not is_stop(token)]
 
-        for mention_word_tensor in mention_embeds:
-            mention_bow += mention_word_tensor
+        for gl_embed, ft_embed in mention_embeds:
+            mention_gl += gl_embed
+            mention_ft += ft_embed
         char_embeds = get_char_embed(mention.mention_str, model, device)
 
         if len(mention_embeds) > 0:
-            mention_bow = mention_bow / float(len(mention_embeds))
+            mention_gl = mention_gl / float(len(mention_embeds))
+            mention_ft = mention_ft / float(len(mention_embeds))
 
-        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, mention_gl, mention_ft, char_embeds], 1)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:

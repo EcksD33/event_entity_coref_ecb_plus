@@ -39,6 +39,8 @@ def create_model(config_dict):
     global word_embeds, word_to_ix, char_embeds, char_to_ix
 
     context_vector_size = 1024
+    input_dim = 3* (context_vector_size + (word_embeds.shape[1]+ config_dict["fasttext_size"] + config_dict["char_rep_size"]) * 5) + config_dict["feature_size"]    
+    print("input dim :"+ str(input_dim))   
 
     if config_dict["use_args_feats"]:
         mention_rep_size = context_vector_size + \
@@ -61,7 +63,8 @@ def create_model(config_dict):
                           dims=model_dims,
                           use_mult=config_dict["use_mult"],
                           use_diff=config_dict["use_diff"],
-                          feature_size=config_dict["feature_size"])
+                          feature_size=config_dict["feature_size"],
+                          fasttext_size=config_dict["fasttext_size"])
 
     return model
 
@@ -119,8 +122,8 @@ def load_model_embeddings(config_dict):
     logging.info('Loading word embeddings...')
 
     # load pre-trained word embeddings
-    # vocab, embd = loadGloVe(config_dict["glove_path"])
-    vocab, embd = loadFastText(config_dict["ft_path"])
+    vocab, embd = loadGloVe(config_dict["glove_path"])
+    # vocab, embd = loadFastText(config_dict["ft_path"])
     word_embeds = np.asarray(embd, dtype=np.float64)
 
     i = 0

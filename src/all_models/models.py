@@ -12,7 +12,7 @@ class CDCorefScorer(nn.Module):
     Inherits Pytorch's Module class.
     '''
     def __init__(self, word_embeds, word_to_ix,vocab_size, char_embedding, char_to_ix, char_rep_size
-                 , dims, use_mult, use_diff, feature_size):
+                 , dims, use_mult, use_diff, feature_size,fasttext_size):
         '''
         C'tor for CorefScorer object
         :param word_embeds: pre-trained word embeddings
@@ -44,6 +44,7 @@ class CDCorefScorer(nn.Module):
         self.char_embeddings.weight.requires_grad = True
         self.char_to_ix = char_to_ix
         self.embedding_dim = word_embeds.shape[1]
+        self.fasttext_dim = fasttext_size
         self.char_hidden_dim = char_rep_size
 
         self.char_lstm = nn.LSTM(input_size=char_embedding.shape[1],hidden_size= self.char_hidden_dim,num_layers=1,
