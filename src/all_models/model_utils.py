@@ -423,7 +423,7 @@ def create_args_features_vec(mention_1, mention_2 ,entity_clusters, device, mode
     coref_loc = 0
     coref_tmp = 0
 
-    if coref_a0 == 0 and mention_1.arg0 is not None and mention_2.arg0 is not None:
+    if mention_1.arg0 is not None and mention_2.arg0 is not None:
         if is_system_coref(mention_1.arg0[1], mention_2.arg0[1],entity_clusters):
             coref_a0 = 1
     if coref_a1 == 0 and mention_1.arg1 is not None and mention_2.arg1 is not None:
@@ -1009,7 +1009,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
     :return: a tensor with size (1, 1374)
     '''
 
-    span_tensor = mention.head_elmo_embeddings.to(device).view(1,-1)
+    span_tensor = mention.head_elmo_embeddings.to(torch.float32).to(device).view(1,-1)
 
     mention_span_rep = None
     if is_event:
@@ -1029,7 +1029,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         if len(mention_embeds) > 0:
             mention_bow = mention_bow / float(len(mention_embeds))
 
-        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds], 1)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:
