@@ -119,10 +119,10 @@ def train_model(train_set, dev_set):
         cd_event_model, cd_event_optimizer = amp.initialize(cd_event_model, cd_event_optimizer, opt_level='O1')
         cd_entity_model, cd_entity_optimizer = amp.initialize(cd_entity_model, cd_entity_optimizer, opt_level='O1')
 
-    patient_counter = 0
-
     orig_event_th = config_dict["event_merge_threshold"]
     orig_entity_th = config_dict["entity_merge_threshold"]
+    print('Start training')
+    logging.info('Start training')
     for epoch in range(start_epoch, config_dict["epochs"]):
         logging.info('Epoch {}:'.format(str(epoch)))
         print('Epoch {}:'.format(str(epoch)))
@@ -191,36 +191,37 @@ def train_model(train_set, dev_set):
         best_event_f1_for_th = 0
         best_entity_f1_for_th = 0
 
-        if event_best_dev_f1 > 0:
-            best_saved_cd_event_model = load_check_point(os.path.join(args.out_dir,
-                                                                      'cd_event_best_model'))
-            best_saved_cd_event_model.to(device)
-        else:
-            best_saved_cd_event_model = cd_event_model
+        event_threshold  = config_dict["event_merge_threshold"]
+        entity_threshold = config_dict["entity_merge_threshold"]
+        print('Testing models on dev set')
+        logging.info('Testing models on dev set')
 
+        # test event coref on dev
         if entity_best_dev_f1 > 0:
-            best_saved_cd_entity_model = load_check_point(os.path.join(args.out_dir,
-                                                                       'cd_entity_best_model'))
+            best_saved_cd_entity_model = load_check_point(os.path.join(args.out_dir,'cd_entity_best_model'))
             best_saved_cd_entity_model.to(device)
         else:
             best_saved_cd_entity_model = cd_entity_model
-
-        event_threshold  = config_dict["event_merge_threshold"]
-        entity_threshold = config_dict["entity_merge_threshold"]
-        print('Testing models on dev set'.format((event_threshold,entity_threshold)))
-        logging.info('Testing models on dev set'.format((event_threshold,entity_threshold)))
-
-        # test event coref on dev
         event_f1, _ = test_models(dev_set, cd_event_model, best_saved_cd_entity_model, device,
                                           config_dict, write_clusters=False, out_dir=args.out_dir,
                                           doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
+        if entity_best_dev_f1 > 0:
+            del best_saved_cd_entity_model
 
         # test entity coref on dev
+        if event_best_dev_f1 > 0:
+            best_saved_cd_event_model = load_check_point(os.path.join(args.out_dir,'cd_event_best_model'))
+            best_saved_cd_event_model.to(device)
+        else:
+            best_saved_cd_event_model = cd_event_model
         _, entity_f1 = test_models(dev_set, best_saved_cd_event_model, cd_entity_model, device,
                                           config_dict, write_clusters=False, out_dir=args.out_dir,
                                           doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)     
-        save_epoch_f1(event_f1, entity_f1, epoch, 0.5, 0.5)  
-
+        if event_best_dev_f1 > 0:
+            del best_saved_cd_event_model
+        torch.cuda.empty_cache()
+        
+        
         improved = False
         if event_f1 > event_best_dev_f1:
             event_best_dev_f1 = event_f1
@@ -234,6 +235,7 @@ def train_model(train_set, dev_set):
             save_check_point(cd_entity_model, os.path.join(args.out_dir, 'cd_entity_best_model'))
             improved = True
             patient_counter = 0
+        save_epoch_f1(cd_entity_model,cd_event_model,event_f1, entity_f1, epoch, 0.5, 0.5)  
 
         if not improved:
             patient_counter += 1
@@ -304,7 +306,7 @@ def train_and_merge(clusters, other_clusters, model, optimizer,
               config_dict["use_args_feats"], config_dict["use_binary_feats"])
 
 
-def save_epoch_f1(event_f1, entity_f1, epoch,  best_event_th, best_entity_th):
+def save_epoch_f1(entity_model, event_model, event_f1, entity_f1, epoch,  best_event_th, best_entity_th):
     '''
     Write to a text file B-cubed F1 measures of both event and entity clustering
     according to the models' predictions on the dev set after each training epoch.

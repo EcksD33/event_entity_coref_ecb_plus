@@ -546,7 +546,7 @@ def loadGloVe(glove_filename):
     '''
     vocab = []
     embd = []
-    file = open(glove_filename,'r')
+    file = open(glove_filename,'r', encoding='utf-8', newline='\n', errors='ignore')
     for line in file.readlines():
         row = line.strip().split(' ')
         if len(row) > 1:
@@ -824,14 +824,11 @@ def create_event_cluster_bow_arg_vec(event_cluster, entity_clusters, model, devi
     :param device: Pytorch device
     '''
     for event_mention in event_cluster.mentions.values():
-        event_mention.arg0_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
+        event_mention.arg0_vec = torch.zeros(model.embedding_dim+model.fasttext_dim  + model.char_hidden_dim,
                                   requires_grad=False).to(device).view(1, -1)
-        event_mention.arg1_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        event_mention.time_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        event_mention.loc_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
+        event_mention.arg1_vec = event_mention.arg0_vec.detach().clone()
+        event_mention.time_vec = event_mention.arg0_vec.detach().clone()
+        event_mention.loc_vec  = event_mention.arg0_vec.detach().clone()
         if event_mention.arg0 is not None:
             arg_vec = find_mention_cluster_vec(event_mention.arg0[1],entity_clusters)
             event_mention.arg0_vec = arg_vec.to(device)
@@ -856,14 +853,11 @@ def create_entity_cluster_bow_predicate_vec(entity_cluster, event_clusters, mode
     :param device: Pytorch device
     '''
     for entity_mention in entity_cluster.mentions.values():
-        entity_mention.arg0_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
+        entity_mention.arg0_vec = torch.zeros(model.embedding_dim +model.fasttext_dim + model.char_hidden_dim,
                                   requires_grad=False).to(device).view(1, -1)
-        entity_mention.arg1_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        entity_mention.time_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        entity_mention.loc_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
+        entity_mention.arg1_vec = entity_mention.arg0_vec.detach().clone()
+        entity_mention.time_vec = entity_mention.arg0_vec.detach().clone()
+        entity_mention.loc_vec  = entity_mention.arg0_vec.detach().clone()
         predicates_dict = entity_mention.predicates
         for predicate_id, rel in predicates_dict.items():
             if rel == 'A0':
@@ -1097,8 +1091,7 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
     loc_vec_mul = mention_1.loc_vec*mention_2.loc_vec     
     mention_pair_tensor = torch.cat([span_rep_1, mention_1.arg0_vec, mention_1.arg1_vec, mention_1.loc_vec, mention_1.time_vec,
                                      span_rep_2, mention_2.arg0_vec, mention_2.arg1_vec, mention_2.loc_vec, mention_2.time_vec,
-                                     span_mul, arg0_vec_mul, arg1_vec_mul, time_vec_mul, loc_vec_mul,
-                                     binary_feats], 1)
+                                     span_mul, arg0_vec_mul, arg1_vec_mul, time_vec_mul, loc_vec_mul, binary_feats], 1)
 
     mention_pair_tensor = mention_pair_tensor.to(device)
 
