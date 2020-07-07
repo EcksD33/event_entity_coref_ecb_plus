@@ -8,13 +8,11 @@ import logging
 import itertools
 import collections
 import numpy as np
-from apex import amp
 from scorer import *
 from eval_utils import *
 import _pickle as cPickle
 from bcubed_scorer import *
 import matplotlib.pyplot as plt
-import torch.nn.functional as F
 from spacy.lang.en import English
 
 for pack in os.listdir("src"):
@@ -1188,8 +1186,7 @@ def train(cluster_pairs, model, optimizer, loss_function, device, topic_docs, ep
             model.zero_grad()
             output = model(batch_tensor)
             loss = loss_function(output, q_tensor)
-            with amp.scale_loss(loss, optimizer) as scaled_loss:
-                scaled_loss.backward(retain_graph=retain_graph)
+            loss.backward(retain_graph=retain_graph)
             optimizer.step()
             total_loss += loss.item()
 
@@ -1392,7 +1389,7 @@ def assign_score(cluster_pair, model, device, topic_docs, is_event, use_args_fea
                                                        use_binary_feats=use_binary_feats,
                                                        other_clusters=other_clusters)
 
-        model_scores = torch.sigmoid(model(batch_tensor).detach())
+        model_scores = model(batch_tensor).detach()
         scores_sum += float(model_scores.sum())
         pairs_count += len(model_scores)
 

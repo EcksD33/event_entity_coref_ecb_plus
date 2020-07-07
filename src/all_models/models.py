@@ -76,7 +76,7 @@ class CDCorefScorer(nn.Module):
         '''
         first_hidden = F.relu(self.hidden_layer_1(clusters_pair_tensor))
         second_hidden = F.relu(self.hidden_layer_2(first_hidden))
-        out = self.out_layer(second_hidden)
+        out = F.sigmoid(self.out_layer(second_hidden))
 
         return out
 

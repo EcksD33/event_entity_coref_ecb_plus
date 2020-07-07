@@ -10,7 +10,6 @@ import logging
 import argparse
 import itertools
 import numpy as np
-from apex import amp
 from scorer import *
 import _pickle as cPickle
 
@@ -115,9 +114,6 @@ def train_model(train_set, dev_set):
     if(os.path.isfile(os.path.join(args.out_dir, 'cd_event_model_state'))):
         cd_event_model, cd_event_optimizer, patient_counter, start_epoch, event_best_dev_f1   = load_training_checkpoint(cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
         cd_entity_model, cd_entity_optimizer, patient_counter, start_epoch, entity_best_dev_f1 = load_training_checkpoint(cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)
-    else:    
-        cd_event_model, cd_event_optimizer = amp.initialize(cd_event_model, cd_event_optimizer, opt_level='O1')
-        cd_entity_model, cd_entity_optimizer = amp.initialize(cd_entity_model, cd_entity_optimizer, opt_level='O1')
 
     orig_event_th = config_dict["event_merge_threshold"]
     orig_entity_th = config_dict["entity_merge_threshold"]
@@ -347,7 +343,7 @@ def save_training_checkpoint(patient_counter, epoch, model, optimizer, best_f1, 
     :param filename: the filename of the checkpoint file
     '''
     state = {'patient_counter': patient_counter, 'epoch': epoch + 1, 'state_dict': model.state_dict(),
-             'optimizer': optimizer.state_dict(), 'best_f1': best_f1,'amp': amp.state_dict()}
+             'optimizer': optimizer.state_dict(), 'best_f1': best_f1}
     torch.save(state, filename)
 
 
@@ -363,8 +359,6 @@ def load_training_checkpoint(model, optimizer, filename, device):
     print("Loading checkpoint '{}'".format(filename))
     checkpoint = torch.load(filename)            
     start_epoch = checkpoint['epoch']
-    model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
-    amp.load_state_dict(checkpoint['amp'])
     patient_counter = checkpoint['patient_counter']
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])

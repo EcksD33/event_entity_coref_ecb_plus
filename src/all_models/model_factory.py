@@ -103,7 +103,7 @@ def create_loss(config_dict):
     loss_function = None
 
     if config_dict["loss"] == 'bce':
-        loss_function = nn.BCEWithLogitsLoss()
+        loss_function = nn.BCELoss()
 
     assert (loss_function is not None), "Config error, check the loss field"
 
