@@ -49,7 +49,7 @@ def create_model(config_dict):
     input_dim = mention_rep_size * 3
 
     if config_dict["use_binary_feats"]:
-        input_dim += config_dict["feature_size"]
+        input_dim += 4* config_dict["feature_size"]
 
     second_dim = int(input_dim / 2)
     third_dim = second_dim
