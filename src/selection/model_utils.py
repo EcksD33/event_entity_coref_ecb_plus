@@ -689,7 +689,7 @@ def create_gold_wd_clusters_organized_by_doc(mentions, is_event):
     return clusters_by_doc
 
 
-def write_event_coref_results(corpus, out_dir, config_dict):
+def write_event_coref_results(tag, corpus, out_dir, config_dict):
     '''
     Writes to a file (in a CoNLL format) the predicted event clusters (for evaluation).
     :param corpus: A Corpus object
@@ -697,18 +697,15 @@ def write_event_coref_results(corpus, out_dir, config_dict):
     :param config_dict: configuration dictionary
     '''
     if not config_dict["test_use_gold_mentions"]:
-        out_file = os.path.join(out_dir, 'CD_test_event_span_based.response_conll')
+        out_file = os.path.join(out_dir, tag+'CD_test_event_span_based.response_conll')
         write_span_based_cd_coref_clusters(corpus, out_file, is_event=True, is_gold=False,
                                            use_gold_mentions=config_dict["test_use_gold_mentions"])
     else:
-        out_file = os.path.join(out_dir, 'CD_test_event_mention_based.response_conll')
+        out_file = os.path.join(out_dir, tag+'CD_test_event_mention_based.response_conll')
         write_mention_based_cd_clusters(corpus, is_event=True, is_gold=False, out_file=out_file)
 
-        out_file = os.path.join(out_dir, 'WD_test_event_mention_based.response_conll')
-        write_mention_based_wd_clusters(corpus, is_event=True, is_gold=False, out_file=out_file)
 
-
-def write_entity_coref_results(corpus, out_dir,config_dict):
+def write_entity_coref_results(tag, corpus, out_dir,config_dict):
     '''
     Writes to a file (in a CoNLL format) the predicted entity clusters (for evaluation).
     :param corpus: A Corpus object
@@ -716,15 +713,12 @@ def write_entity_coref_results(corpus, out_dir,config_dict):
     :param config_dict: configuration dictionary
     '''
     if not config_dict["test_use_gold_mentions"]:
-        out_file = os.path.join(out_dir, 'CD_test_entity_span_based.response_conll')
+        out_file = os.path.join(out_dir, tag+'CD_test_entity_span_based.response_conll')
         write_span_based_cd_coref_clusters(corpus, out_file, is_event=False, is_gold=False,
                                            use_gold_mentions=config_dict["test_use_gold_mentions"])
     else:
-        out_file = os.path.join(out_dir, 'CD_test_entity_mention_based.response_conll')
+        out_file = os.path.join(out_dir, tag+'CD_test_entity_mention_based.response_conll')
         write_mention_based_cd_clusters(corpus, is_event=False, is_gold=False, out_file=out_file)
-
-        out_file = os.path.join(out_dir, 'WD_test_entity_mention_based.response_conll')
-        write_mention_based_wd_clusters(corpus, is_event=False, is_gold=False, out_file=out_file)
 
 
 def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_embeds,
@@ -1489,7 +1483,7 @@ def merge(clusters, cluster_pairs, other_clusters,model, device, topic_docs, epo
         max_pair, max_score = key_with_max_val(pairs_dict)
 
         if max_score > threshold:
-            print('epoch {} topic {}/{} - merge {} clusters with score {} clusters : {} {}'.format(
+            print('epoch {} topic {}/{} - merge {} clusters with score {}'.format(
                 epoch, topics_counter, topics_num, mode, str(max_score), str(max_pair[0]),
                 str(max_pair[1])))
             logging.info('epoch {} topic {}/{} - merge {} clusters with score {} clusters : {} {}'.format(
@@ -1539,7 +1533,7 @@ def test_model(clusters, other_clusters, model, device, topic_docs, is_event, ep
           use_binary_feats)
 
 
-def test_models(is_th_series, test_set, cd_event_model,cd_entity_model, device,
+def test_models(tag,is_th_series, test_set, cd_event_model,cd_entity_model, device,
                 config_dict, write_clusters, out_dir, doc_to_entity_mentions, analyze_scores):
     '''
     Runs the inference procedure for both event and entity models calculates the B-cubed
@@ -1636,8 +1630,8 @@ def test_models(is_th_series, test_set, cd_event_model,cd_entity_model, device,
                 entity_th = ent_th
                 event_th = ev_th
                 if(is_th_series):
-                    entity_th = ent_th[i]
-                    event_th = ev_th[i]                    
+                    entity_th = ent_th[i-1]
+                    event_th = ev_th[i-1]                    
                 
                 # Merge entities
                 print('Merge entity clusters...')
@@ -1662,36 +1656,26 @@ def test_models(is_th_series, test_set, cd_event_model,cd_entity_model, device,
                                         is_gold=config_dict["test_use_gold_mentions"],intersect_with_gold=True)
             set_coref_chain_to_mentions(topic_entity_clusters, is_event=False,
                                         is_gold=config_dict["test_use_gold_mentions"],intersect_with_gold=True)
-
             if write_clusters:
                 # Save for analysis
                 all_event_clusters.extend(topic_event_clusters)
                 all_entity_clusters.extend(topic_entity_clusters)
 
-                with open(os.path.join(out_dir, 'entity_clusters.txt'), 'a') as entity_file_obj:
+                with open(os.path.join(out_dir, tag+'entity_clusters.txt'), 'a') as entity_file_obj:
                     write_clusters_to_file(topic_entity_clusters, entity_file_obj, topic_id)
                     entity_errors.extend(collect_errors(topic_entity_clusters, topic_event_clusters, topic.docs,
                                                         is_event=False))
 
-                with open(os.path.join(out_dir, 'event_clusters.txt'), 'a') as event_file_obj:
+                with open(os.path.join(out_dir, tag+'event_clusters.txt'), 'a') as event_file_obj:
                     write_clusters_to_file(topic_event_clusters, event_file_obj, topic_id)
                     event_errors.extend(collect_errors(topic_event_clusters, topic_entity_clusters, topic.docs,
                                                        is_event=True))
 
         if write_clusters:
-            write_event_coref_results(test_set, out_dir, config_dict)
-            write_entity_coref_results(test_set, out_dir, config_dict)
-            sample_errors(event_errors, os.path.join(out_dir,'event_errors'))
-            sample_errors(entity_errors, os.path.join(out_dir,'entity_errors'))
-
-    if analyze_scores:
-        # Save mention representations
-        save_mention_representations(all_event_clusters, out_dir, is_event=True)
-        save_mention_representations(all_entity_clusters, out_dir, is_event=False)
-
-        # Save topics for analysis
-        with open(os.path.join(out_dir,'test_topics'), 'wb') as f:
-            cPickle.dump(topics, f)
+            write_event_coref_results(tag, test_set, out_dir, config_dict)
+            write_entity_coref_results(tag, test_set, out_dir, config_dict)
+            sample_errors(event_errors, os.path.join(out_dir,tag+'event_errors'))
+            sample_errors(entity_errors, os.path.join(out_dir,tag+'entity_errors'))
 
     if config_dict["test_use_gold_mentions"]:
         event_predicted_lst = [event.cd_coref_chain for event in all_event_mentions]

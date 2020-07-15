@@ -65,69 +65,6 @@ from classes import *
 from eval_utils import *
 from model_utils import *
 
-def read_conll_f1(filename):
-    '''
-    This function reads the results of the CoNLL scorer , extracts the F1 measures of the MUS,
-    B-cubed and the CEAF-e and calculates CoNLL F1 score.
-    :param filename: a file stores the scorer's results.
-    :return: the CoNLL F1
-    '''
-    f1_list = []
-    with open(filename, "r") as ins:
-        for line in ins:
-            new_line = line.strip()
-            if new_line.find('F1:') != -1:
-                f1_list.append(float(new_line.split(': ')[-1][:-1]))
-
-    muc_f1 = f1_list[1]
-    bcued_f1 = f1_list[3]
-    ceafe_f1 = f1_list[7]
-
-    return (muc_f1 + bcued_f1 + ceafe_f1)/float(3)
-
-
-def run_conll_scorer(tag):
-    if config_dict["test_use_gold_mentions"]:
-        event_response_filename = os.path.join(args.out_dir, tag+'CD_test_event_mention_based.response_conll')
-        entity_response_filename = os.path.join(args.out_dir, tag+'CD_test_entity_mention_based.response_conll')
-    else:
-        event_response_filename = os.path.join(args.out_dir, tag+'CD_test_event_span_based.response_conll')
-        entity_response_filename = os.path.join(args.out_dir, tag+'CD_test_entity_span_based.response_conll')
-
-    event_conll_file = os.path.join(args.out_dir,tag+'event_scorer_cd_out.txt')
-    entity_conll_file = os.path.join(args.out_dir,tag+'entity_scorer_cd_out.txt')
-
-    event_scorer_command = ('perl scorer/scorer.pl all {} {} none > {} \n'.format
-            (config_dict["event_gold_file_path"], event_response_filename, event_conll_file))
-
-    entity_scorer_command = ('perl scorer/scorer.pl all {} {} none > {} \n'.format
-            (config_dict["entity_gold_file_path"], entity_response_filename, entity_conll_file))
-
-    processes = []
-    print('Run scorer command for cross-document event coreference :'+tag)
-    processes.append(subprocess.Popen(event_scorer_command, shell=True))
-
-    print('Run scorer command for cross-document entity coreference :'+tag)
-    processes.append(subprocess.Popen(entity_scorer_command, shell=True))
-
-    while processes:
-        status = processes[0].poll()
-        if status is not None:
-            processes.pop(0)
-
-    print ('Running scorers has been done.')
-    print ('Save results...')
-
-    scores_file = open(os.path.join(args.out_dir, tag+'conll_f1_scores.txt'), 'w')
-
-    event_f1 = read_conll_f1(event_conll_file)
-    entity_f1 = read_conll_f1(entity_conll_file)
-    scores_file.write('Event CoNLL F1: {}\n'.format(event_f1))
-    scores_file.write('Entity CoNLL F1: {}\n'.format(entity_f1))
-
-    scores_file.close()
-
-
 def test_model(test_set):
     '''
     Loads trained event and entity models and test them on the test set
@@ -143,59 +80,75 @@ def test_model(test_set):
 
     doc_to_entity_mentions = load_entity_wd_clusters(config_dict)
 
+    scores_file = open(os.path.join(args.out_dir, 'Scores.txt'), 'w')
+
+
+
     config_dict["entity_merge_threshold"] = 0.5
     config_dict["event_merge_threshold"] = 0.5
-    _,_ = test_models(False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "55"
+    event_f1, entity_f1 = test_models(tag,False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("5-5")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
 
     config_dict["entity_merge_threshold"] = 0.6
     config_dict["event_merge_threshold"] = 0.5
-    _,_ = test_models(False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "65"
+    event_f1, entity_f1 = test_models(tag,False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("6-5")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
 
     config_dict["entity_merge_threshold"] = 0.5
     config_dict["event_merge_threshold"] = 0.6
-    _,_ = test_models(False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "56"
+    event_f1, entity_f1 = test_models(tag,False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("5-6")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
 
     config_dict["entity_merge_threshold"] = 0.6
     config_dict["event_merge_threshold"] = 0.6
-    _,_ = test_models(False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "66"
+    event_f1, entity_f1 = test_models(tag,False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("6-6")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
                       
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
-    _,_ = test_models(True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "s5s5"
+    event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("s5-s5")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
                       
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6,0.6]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
-    _,_ = test_models(True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "s6s5"
+    event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("s6-s5")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
                       
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6,0.6]
-    _,_ = test_models(True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "s5s6"
+    event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("s5-s6")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
                       
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6]
-    _,_ = test_models(True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "s6s6"
+    event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("s6-s6")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
                       
     config_dict["entity_merge_threshold"] = [0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5]
     config_dict["event_merge_threshold"] = [0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5]
-    _,_ = test_models(True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
+    tag = "s5i5"
+    event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
-    run_conll_scorer("s5-i5")
+    scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
+    
+    
+    scores_file.close()
 
 
 def main():

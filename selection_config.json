@@ -13,7 +13,7 @@
   "wd_entity_coref_file": "data/external/stanford_neural_wd_entity_coref_out/ecb_wd_coref.json",
   "merge_iters": 2,
 
-  "load_predicted_topics": true,
+  "load_predicted_topics": false,
   "predicted_topics_path": "data/external/document_clustering/predicted_topics",
 
   "seed": 1,
