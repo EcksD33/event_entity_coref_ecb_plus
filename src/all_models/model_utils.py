@@ -397,14 +397,7 @@ def is_system_coref(mention_id_1, mention_id_2, clusters):
         return True
     return False
 
-def get_idx_binary(bin):
-    value = 0
-    for i in range(len(bin)):
-        digit = bin.pop()
-        if digit == '1':
-            value = value + pow(2, i)
-    return value
-    
+
 def create_args_features_vec(mention_1, mention_2 ,entity_clusters, device, model):
     '''
     Creates a vector for four binary features (one for each role - Arg0/Arg1/location/time)
@@ -422,22 +415,30 @@ def create_args_features_vec(mention_1, mention_2 ,entity_clusters, device, mode
     coref_a1 = 0
     coref_loc = 0
     coref_tmp = 0
-    
-    if mention_1.arg0 is not None and mention_2.arg0 is not None:
+
+    if coref_a0 == 0 and mention_1.arg0 is not None and mention_2.arg0 is not None:
         if is_system_coref(mention_1.arg0[1], mention_2.arg0[1],entity_clusters):
             coref_a0 = 1
-    if mention_1.arg1 is not None and mention_2.arg1 is not None:
+    if coref_a1 == 0 and mention_1.arg1 is not None and mention_2.arg1 is not None:
         if is_system_coref(mention_1.arg1[1], mention_2.arg1[1],entity_clusters):
             coref_a1 = 1
-    if mention_1.amloc is not None and mention_2.amloc is not None:
+    if coref_loc == 0 and mention_1.amloc is not None and mention_2.amloc is not None:
         if is_system_coref(mention_1.amloc[1], mention_2.amloc[1],entity_clusters):
             coref_loc = 1
-    if mention_1.amtmp is not None and mention_2.amtmp is not None:
+    if coref_tmp == 0 and mention_1.amtmp is not None and mention_2.amtmp is not None:
         if is_system_coref(mention_1.amtmp[1], mention_2.amtmp[1],entity_clusters):
             coref_tmp = 1
 
-    idx = get_idx_binary([coref_a0, coref_a1, coref_loc, coref_tmp])    
-    args_features_tensor = model.coref_role_embeds(torch.tensor(idx, dtype=torch.long).to(device)).view(1,-1)
+    arg0_tensor = model.coref_role_embeds(torch.tensor(coref_a0,
+                                                       dtype=torch.long).to(device)).view(1,-1)
+    arg1_tensor = model.coref_role_embeds(torch.tensor(coref_a1,
+                                                       dtype=torch.long).to(device)).view(1,-1)
+    amloc_tensor = model.coref_role_embeds(torch.tensor(coref_loc,
+                                                        dtype=torch.long).to(device)).view(1,-1)
+    amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_tmp,
+                                                        dtype=torch.long).to(device)).view(1,-1)
+
+    args_features_tensor = torch.cat([arg0_tensor,arg1_tensor, amloc_tensor,amtmp_tensor],1)
 
     return args_features_tensor
 
@@ -476,11 +477,17 @@ def create_predicates_features_vec(mention_1, mention_2, event_clusters, device,
             if coref_pred_tmp == 0 and rel_1 == 'AM-TMP' and rel_2 == 'AM-TMP':
                 if is_system_coref(predicate_id_1[1], predicate_id_2[1], event_clusters):
                     coref_pred_tmp = 1
-            if(1 == coref_pred_tmp == coref_pred_loc == coref_pred_a1 == coref_pred_a0):
-                break
 
-    idx = get_idx_binary([coref_pred_a0, coref_pred_a1, coref_pred_loc, coref_pred_tmp])    
-    predicates_features_tensor = model.coref_role_embeds(torch.tensor(idx, dtype=torch.long).to(device)).view(1,-1)
+    arg0_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a0,
+                                                       dtype=torch.long).to(device)).view(1,-1)
+    arg1_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a1,
+                                                       dtype=torch.long).to(device)).view(1,-1)
+    amloc_tensor = model.coref_role_embeds(torch.tensor(coref_pred_loc,
+                                                        dtype=torch.long).to(device)).view(1,-1)
+    amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_pred_tmp,
+                                                        dtype=torch.long).to(device)).view(1,-1)
+
+    predicates_features_tensor = torch.cat([arg0_tensor, arg1_tensor, amloc_tensor, amtmp_tensor],1)
 
     return predicates_features_tensor
 
