@@ -42,9 +42,9 @@ def create_model(config_dict):
 
     if config_dict["use_args_feats"]:
         mention_rep_size = context_vector_size + \
-                            ((word_embeds.shape[1] + config_dict["char_rep_size"]) * 5)
+                            ((config_dict["char_rep_size"]) * 5)
     else:
-        mention_rep_size = context_vector_size + word_embeds.shape[1] + config_dict["char_rep_size"]
+        mention_rep_size = context_vector_size + config_dict["char_rep_size"]
 
     input_dim = mention_rep_size * 3
 
@@ -55,7 +55,7 @@ def create_model(config_dict):
     third_dim = second_dim
     model_dims = [input_dim, second_dim, third_dim]
 
-    model = CDCorefScorer(word_embeds, word_to_ix, word_embeds.shape[0],
+    model = CDCorefScorer(None, None, 0,
                           char_embedding=char_embeds, char_to_ix=char_to_ix,
                           char_rep_size=config_dict["char_rep_size"],
                           dims=model_dims,
@@ -119,17 +119,9 @@ def load_model_embeddings(config_dict):
     logging.info('Loading word embeddings...')
 
     # load pre-trained word embeddings
-    vocab, embd = loadGloVe(config_dict["glove_path"])
+    # vocab, embd = loadGloVe(config_dict["glove_path"])
     # vocab, embd = loadFastText(config_dict["ft_path"])
-    word_embeds = np.asarray(embd, dtype=np.float64)
-
-    i = 0
-    word_to_ix = {}
-    for word in vocab:
-        if word in word_to_ix:
-            continue
-        word_to_ix[word] = i
-        i += 1
+    # word_embeds = np.asarray(embd, dtype=np.float64)
 
     logging.info('Word embeddings have been loaded.')
 
@@ -155,4 +147,4 @@ def load_model_embeddings(config_dict):
         logging.info('Loading one-hot char embeddings...')
         char_embeds, char_to_ix = load_one_hot_char_embeddings(config_dict["char_vocab_path"])
 
-    return word_embeds, word_to_ix, char_embeds, char_to_ix
+    return None, None, char_embeds, char_to_ix
