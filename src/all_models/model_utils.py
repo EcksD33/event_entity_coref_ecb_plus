@@ -1014,7 +1014,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         head = mention.mention_head
         head_tensor = find_word_embed(head, model, device)
         char_embeds = get_char_embed(head, model, device)
-        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
+        mention_span_rep = torch.cat([head_tensor, char_embeds], 1)
     else:
         mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
         mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
@@ -1027,7 +1027,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         if len(mention_embeds) > 0:
             mention_bow = mention_bow / float(len(mention_embeds))
 
-        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds], 1)
+        mention_span_rep = torch.cat([mention_bow, char_embeds], 1)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:
@@ -1831,7 +1831,7 @@ def mention_to_rep(mention):
     args_vector = torch.squeeze(torch.cat([mention.arg0_vec, mention.arg1_vec,
                                   mention.loc_vec, mention.time_vec], 1)).cpu().numpy()
 
-    context_vector = mention.head_elmo_embeddings
+    context_vector = torch.zero(len(mention.head_elmo_embeddings),requires_grad=False)
 
     return mention_tensor, args_vector , context_vector
 

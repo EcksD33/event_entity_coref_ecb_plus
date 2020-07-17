@@ -41,10 +41,9 @@ def create_model(config_dict):
     context_vector_size = 1024
 
     if config_dict["use_args_feats"]:
-        mention_rep_size = context_vector_size + \
-                            ((word_embeds.shape[1] + config_dict["char_rep_size"]) * 5)
+        mention_rep_size = ((word_embeds.shape[1] + config_dict["char_rep_size"]) * 5)
     else:
-        mention_rep_size = context_vector_size + word_embeds.shape[1] + config_dict["char_rep_size"]
+        mention_rep_size = word_embeds.shape[1] + config_dict["char_rep_size"]
 
     input_dim = mention_rep_size * 3
 
