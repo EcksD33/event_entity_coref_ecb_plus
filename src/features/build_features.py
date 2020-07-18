@@ -17,7 +17,7 @@ sys.path.append("/src/shared/")
 from collections import defaultdict
 from swirl_parsing import parse_swirl_output
 from allen_srl_reader import read_srl
-from create_bert_embeddings import *
+from create_gpt_embeddings import *
 from create_elmo_embeddings import *
 from classes import Document, Sentence, Token, EventMention, EntityMention
 from extraction_utils import *
@@ -737,9 +737,9 @@ def main(args):
         # load_elmo_embeddings(dev_set, elmo_embedder, set_pred_mentions=False)
         # load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
    
-    if config_dict["load_bert"]: # load BERT embeddings
-        bert_embedder = BERTEmbedding()
-        logger.info("Loading BERT embeddings...")
+    if config_dict["load_gpt"]: # load gpt embeddings
+        bert_embedder = GPT2Embedding()
+        logger.info("Loading GPT-2 embeddings...")
         load_elmo_embeddings(train_set, bert_embedder, set_pred_mentions=False)
         load_elmo_embeddings(dev_set, bert_embedder, set_pred_mentions=False)
         load_elmo_embeddings(test_set, bert_embedder, set_pred_mentions=True)
