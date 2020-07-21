@@ -32,7 +32,7 @@
 
     "test_use_gold_mentions": true,
     "train_init_wd_entity_with_gold": true,
-    "train_path": "out_features/training_data",
+    "train_path": "out_features/ELMO/training_data",
     "use_args_feats": true,
     "use_binary_feats": true,
     "use_diff": false,
