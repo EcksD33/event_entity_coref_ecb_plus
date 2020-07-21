@@ -11,7 +11,7 @@
     "event_merge_threshold": 0.5,
     "feature_size": 50,
     "glove_path": "trained_model_n_data/glove.6B.300d.txt",
-    "ft_path": "trained_model_n_data/wiki-news-300d-1M.vec",
+    "ft_path": "trained_model_n_data/glove.6B.300d.txt.vec",
     "gpu_num": 0,
 
     "load_predicted_topics": false,
