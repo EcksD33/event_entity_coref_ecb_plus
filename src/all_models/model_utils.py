@@ -754,7 +754,7 @@ def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_e
             char_tensor = get_char_embed(head, model, device)
             if not requires_grad:
                 char_tensor = char_tensor.detach()
-            cat_tensor = torch.cat([head_tensor, char_tensor], 1)
+            cat_tensor = torch.cat([head_tensor], 1)
         else:
             cat_tensor = head_tensor
         bow_vec += cat_tensor
@@ -801,7 +801,7 @@ def create_entity_cluster_bow_lexical_vec(entity_cluster, model, device, use_cha
             if not requires_grad:
                 char_embeds = char_embeds.detach()
 
-            cat_tensor = torch.cat([mention_bow, char_embeds], 1)
+            cat_tensor = torch.cat([mention_bow], 1)
         else:
             cat_tensor = mention_bow
         bow_vec += cat_tensor
@@ -1014,7 +1014,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         head = mention.mention_head
         head_tensor = find_word_embed(head, model, device)
         char_embeds = get_char_embed(head, model, device)
-        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, head_tensor], 1)
     else:
         mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
         mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
@@ -1027,7 +1027,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         if len(mention_embeds) > 0:
             mention_bow = mention_bow / float(len(mention_embeds))
 
-        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, mention_bow], 1)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:
