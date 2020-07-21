@@ -1,4 +1,4 @@
-{"test_path":"out_features/test_data",
+{"test_path":"out_features/GPT/test_data",
 
   "cd_event_model_path": "out_train/cd_event_best_model",
   "cd_entity_model_path": "out_train/cd_entity_best_model",
