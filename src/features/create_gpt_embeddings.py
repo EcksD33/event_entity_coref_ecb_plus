@@ -11,10 +11,10 @@ class GPT2Embedding(object):
     A wrapper class for the bert_embedding
     '''
     def __init__(self):
-        logger.info('Loading BERT Embedding module')
+        logger.info('Loading GPT Embedding module')
         tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
         model = GPT2Model.from_pretrained('gpt2')
-        logger.info('BERT Embedding module loaded successfully')
+        logger.info('GPT Embedding module loaded successfully')
 
     def get_embedding(self, sentence):
         tokenized_sent = sentence.get_tokens_strings()
@@ -26,13 +26,13 @@ class GPT2Embedding(object):
         for i,toks in enumerate(tokenized_sent):
             count = 0
             for j,gptToks in enumerate(tokens):
-                if(toks.lower() == gptToks):
+                if(toks == gptToks):
                     out[i] = result[j]
                     break        
-                if(toks.lower() in gptToks):
+                if(toks in gptToks):
                     out[i] = result[j]
                     break          
-                if(gptToks.lower() in toks):
+                if(gptToks in toks):
                     out[i] += result[j]
                     count += 1
             if(count > 0):
