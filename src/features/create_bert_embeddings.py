@@ -12,7 +12,7 @@ class BERTEmbedding(object):
     '''
     def __init__(self):
         logger.info('Loading BERT Embedding module')
-        self.embedder = BertEmbedding(model='bert_24_1024_16',max_seq_length =50)
+        self.embedder = BertEmbedding(model='bert_24_1024_16',max_seq_length = 200)
         logger.info('BERT Embedding module loaded successfully')
 
     def get_embedding(self, sentence):
@@ -23,13 +23,13 @@ class BERTEmbedding(object):
         for i,toks in enumerate(tokenized_sent):
             count = 0
             for j,bertToks in enumerate(result[0]):
-                if(toks.lower() == bertToks):
+                if(toks == bertToks):
                     out[i] = result[1][j]
                     break        
-                if(toks.lower() in bertToks):
+                if(toks in bertToks):
                     out[i] = result[1][j]
                     break          
-                if(bertToks.lower() in toks):
+                if(bertToks in toks):
                     out[i] += result[1][j]
                     count += 1
             if(count > 0):
