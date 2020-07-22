@@ -34,7 +34,6 @@ class CDCorefScorer(nn.Module):
         '''
         super(CDCorefScorer, self).__init__()
         self.embed = None
-        self.embed.weight.requires_grad = False # pre-trained word embeddings are fixed
         self.word_to_ix = None
 
         self.char_embeddings = nn.Embedding(len(char_to_ix.keys()), char_embedding.shape[1])
