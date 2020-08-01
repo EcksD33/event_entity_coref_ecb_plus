@@ -14,3 +14,7 @@ trained_model_n_data/
 cc.en.300.bin
 
 prf
+
+*.bat
+
+src/features/__pycache__/

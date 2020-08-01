@@ -23,7 +23,7 @@
 
   "load_predicted_mentions": false,
   "load_elmo": false,
-  "load_bert": true,
+  "load_gpt": true,
   "options_file": "trained_model_n_data/elmo_options.json",
   "weight_file": "trained_model_n_data/elmo_weights.hdf5"
 
