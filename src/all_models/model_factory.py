@@ -41,9 +41,9 @@ def create_model(config_dict):
     context_vector_size = 1024
 
     if config_dict["use_args_feats"]:
-        mention_rep_size = config_dict["char_rep_size"]) * 5
+        mention_rep_size = 0
     else:
-        mention_rep_size = config_dict["char_rep_size"]
+        mention_rep_size = 0
 
     input_dim = mention_rep_size * 3
 

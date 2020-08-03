@@ -749,13 +749,7 @@ def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_e
     for event_mention in event_cluster.mentions.values():
         # creating lexical vector using the head word of each event mention in the cluster
         head = event_mention.mention_head
-        if use_char_embeds:
-            char_tensor = get_char_embed(head, model, device)
-            if not requires_grad:
-                char_tensor = char_tensor.detach()
-            cat_tensor = torch.cat([char_tensor], 1)
-        else:
-            cat_tensor = torch.cat([],1)
+        cat_tensor = torch.cat([],1)
         bow_vec += cat_tensor
 
     return bow_vec / len(event_cluster.mentions.keys())
@@ -782,17 +776,7 @@ def create_entity_cluster_bow_lexical_vec(entity_cluster, model, device, use_cha
         bow_vec = torch.zeros(model.embedding_dim,
                               requires_grad=requires_grad).to(device).view(1, -1)
     for entity_mention in entity_cluster.mentions.values():
-        # creating lexical vector using each entity mention in the cluster
-        if use_char_embeds:
-            char_embeds = get_char_embed(entity_mention.mention_str, model, device)
-
-        if use_char_embeds:
-            if not requires_grad:
-                char_embeds = char_embeds.detach()
-
-            cat_tensor = torch.cat([char_embeds], 1)
-        else:
-            cat_tensor = torch.cat([], 1)
+        cat_tensor = torch.cat([], 1)
         bow_vec += cat_tensor
 
     return bow_vec / len(entity_cluster.mentions.keys())
@@ -1000,13 +984,9 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
     span_tensor = mention.head_elmo_embeddings.to(device).view(1,-1)
     mention_span_rep = None
     if is_event:
-        head = mention.mention_head
-        char_embeds = get_char_embed(head, model, device)
-        mention_span_rep = torch.cat([char_embeds], 1)
+        mention_span_rep = torch.cat([], 1)
     else:
-        char_embeds = get_char_embed(mention.mention_str, model, device)
-
-        mention_span_rep = torch.cat([char_embeds], 1)
+        mention_span_rep = torch.cat([], 1)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:
