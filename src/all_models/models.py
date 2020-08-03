@@ -33,17 +33,13 @@ class CDCorefScorer(nn.Module):
 
         '''
         super(CDCorefScorer, self).__init__()
-        self.embed = nn.Embedding(vocab_size, word_embeds.shape[1])
-
-        self.embed.weight.data.copy_(torch.from_numpy(word_embeds))
-        self.embed.weight.requires_grad = False # pre-trained word embeddings are fixed
-        self.word_to_ix = word_to_ix
+        self.embed = None
 
         self.char_embeddings = nn.Embedding(len(char_to_ix.keys()), char_embedding.shape[1])
         self.char_embeddings.weight.data.copy_(torch.from_numpy(char_embedding))
         self.char_embeddings.weight.requires_grad = True
         self.char_to_ix = char_to_ix
-        self.embedding_dim = word_embeds.shape[1]
+        self.embedding_dim = 0
         self.char_hidden_dim = char_rep_size
 
         self.char_lstm = nn.LSTM(input_size=char_embedding.shape[1],hidden_size= self.char_hidden_dim,num_layers=1,
