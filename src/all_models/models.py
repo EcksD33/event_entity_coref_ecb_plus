@@ -44,10 +44,9 @@ class CDCorefScorer(nn.Module):
         self.char_embeddings.weight.requires_grad = True
         self.char_to_ix = char_to_ix
         self.embedding_dim = word_embeds.shape[1]
-        self.char_hidden_dim = char_rep_size
+        self.char_hidden_dim = 0
 
-        self.char_lstm = nn.LSTM(input_size=char_embedding.shape[1],hidden_size= self.char_hidden_dim,num_layers=1,
-                                 bidirectional=False)
+        self.char_lstm = None
 
         # binary features for coreferring arguments/predicates
         self.coref_role_embeds = nn.Embedding(2,feature_size)

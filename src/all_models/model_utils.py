@@ -343,7 +343,7 @@ def get_char_embed(word, model, device):
     :param device: Pytorch device (gpu/cpu)
     :return:  the character-LSTM's last output vector
     '''
-    char_vec = model.get_char_embeds(word, device)
+    char_vec = None
 
     return char_vec
 
@@ -752,8 +752,6 @@ def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_e
         head_tensor = find_word_embed(head, model, device)
         if use_char_embeds:
             char_tensor = get_char_embed(head, model, device)
-            if not requires_grad:
-                char_tensor = char_tensor.detach()
             cat_tensor = torch.cat([head_tensor], 1)
         else:
             cat_tensor = head_tensor
@@ -798,8 +796,6 @@ def create_entity_cluster_bow_lexical_vec(entity_cluster, model, device, use_cha
         mention_bow /= len(entity_mention.get_tokens())
 
         if use_char_embeds:
-            if not requires_grad:
-                char_embeds = char_embeds.detach()
 
             cat_tensor = torch.cat([mention_bow], 1)
         else:

@@ -16,3 +16,5 @@ prf
 cc.en.300.bin
 
 out_select/
+
+*.bat
