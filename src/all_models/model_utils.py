@@ -1807,7 +1807,7 @@ def sample_errors(error_list, out_path):
     :param out_path: path to output file
     '''
     random.shuffle(error_list)
-    sample = error_list[:50]
+    sample = error_list[:30]
     with open(out_path,'w') as f:
         for error in sample:
             f.write('Wrong mention - {}\n'.format(error[0]))
