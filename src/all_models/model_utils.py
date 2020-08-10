@@ -546,6 +546,7 @@ def loadFastText(fasttext_filename):
     
     return vocab,embd  
 
+import random
 def loadGloVe(glove_filename):
     '''
     Loads Glove word vectors.
@@ -555,17 +556,29 @@ def loadGloVe(glove_filename):
     vocab = []
     embd = []
     file = open(glove_filename,'r', encoding='utf-8')
+    x = 0
     for line in file.readlines():
-        row = line.strip().split(' ')
-        if len(row) > 1:
-            if row[0] != '':
-                vocab.append(row[0])
-                embd.append(row[1:])
-                if len(row[1:]) != 300:
-                    print(len(row[1:]))
+        try:
+            wvsplit = line.strip().split('\t')
+            x +=1
+            if(wvsplit[0].isalnum() and x%2 == 0):
+                vsplit = wvsplit[1].strip().split(',')
+                row = [wvsplit[0]]
+                row.extend(vsplit)
+                if len(row) > 1:
+                    if row[0] != '':
+                        vocab.append(row[0])
+                        embd.append(row[1:])
+                        if len(row[1:]) != 300:
+                            print(len(row[1:]))
+        except:
+            continue
     print('Loaded GloVe!')
     file.close()
-
+    if(not("unk" in vocab)):
+        vocab.append("unk")
+        embd.append([0 for i in range(300)])
+        
     return vocab,embd
 
 
@@ -1807,7 +1820,7 @@ def sample_errors(error_list, out_path):
     :param out_path: path to output file
     '''
     random.shuffle(error_list)
-    sample = error_list[:50]
+    sample = error_list[:30]
     with open(out_path,'w') as f:
         for error in sample:
             f.write('Wrong mention - {}\n'.format(error[0]))
