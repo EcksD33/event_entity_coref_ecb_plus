@@ -24,3 +24,7 @@ Error anaylsis/BERT/event_errors
 Error anaylsis/BERT/entity_errors
 
 Significance test.r
+
+Error anaylsis/GPT-2/event_errors
+
+Error anaylsis/GPT-2/entity_errors

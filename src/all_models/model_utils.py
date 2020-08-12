@@ -1647,8 +1647,8 @@ def test_models(test_set, cd_event_model,cd_entity_model, device,
 
     if analyze_scores:
         # Save mention representations
-        save_mention_representations(all_event_clusters, out_dir, is_event=True)
-        save_mention_representations(all_entity_clusters, out_dir, is_event=False)
+        # save_mention_representations(all_event_clusters, out_dir, is_event=True)
+        # save_mention_representations(all_entity_clusters, out_dir, is_event=False)
 
         # Save topics for analysis
         with open(os.path.join(out_dir,'test_topics'), 'wb') as f:
