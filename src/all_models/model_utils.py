@@ -741,15 +741,15 @@ def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_e
     (average of mention's span vectors in the cluster)
     '''
     if use_char_embeds:
-        bow_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
+        bow_vec = torch.zeros(0,
                               requires_grad=requires_grad).to(device).view(1, -1)
     else:
-        bow_vec = torch.zeros(model.embedding_dim ,
+        bow_vec = torch.zeros(0 ,
                               requires_grad=requires_grad).to(device).view(1, -1)
     for event_mention in event_cluster.mentions.values():
         # creating lexical vector using the head word of each event mention in the cluster
         head = event_mention.mention_head
-        cat_tensor = torch.cat([],1)
+        cat_tensor = torch.tensor([]).to(device)
         bow_vec += cat_tensor
 
     return bow_vec / len(event_cluster.mentions.keys())
@@ -770,13 +770,13 @@ def create_entity_cluster_bow_lexical_vec(entity_cluster, model, device, use_cha
     (average of mention's span vectors in the cluster)
     '''
     if use_char_embeds:
-        bow_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
+        bow_vec = torch.zeros(0,
                               requires_grad=requires_grad).to(device).view(1, -1)
     else:
-        bow_vec = torch.zeros(model.embedding_dim,
+        bow_vec = torch.zeros(0,
                               requires_grad=requires_grad).to(device).view(1, -1)
     for entity_mention in entity_cluster.mentions.values():
-        cat_tensor = torch.cat([], 1)
+        cat_tensor = torch.tensor([]).to(device)
         bow_vec += cat_tensor
 
     return bow_vec / len(entity_cluster.mentions.keys())
@@ -984,9 +984,9 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
     span_tensor = mention.head_elmo_embeddings.to(device).view(1,-1)
     mention_span_rep = None
     if is_event:
-        mention_span_rep = torch.cat([], 1)
+        mention_span_rep = torch.tensor([]).to(device)
     else:
-        mention_span_rep = torch.cat([], 1)
+        mention_span_rep = torch.tensor([]).to(device)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:
@@ -1056,15 +1056,7 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
     else:
         binary_feats = create_predicates_features_vec(mention_1, mention_2, other_clusters,
                                                       device, model)
-    span_mul = span_rep_1*span_rep_2                                                        
-    arg0_vec_mul = mention_1.arg0_vec*mention_2.arg0_vec                                                        
-    arg1_vec_mul = mention_1.arg1_vec*mention_2.arg1_vec                                                        
-    time_vec_mul = mention_1.time_vec*mention_2.time_vec                                                        
-    loc_vec_mul = mention_1.loc_vec*mention_2.loc_vec     
-    mention_pair_tensor = torch.cat([span_rep_1, mention_1.arg0_vec, mention_1.arg1_vec, mention_1.loc_vec, mention_1.time_vec,
-                                     span_rep_2, mention_2.arg0_vec, mention_2.arg1_vec, mention_2.loc_vec, mention_2.time_vec,
-                                     span_mul, arg0_vec_mul, arg1_vec_mul, time_vec_mul, loc_vec_mul,
-                                     binary_feats], 1)
+    mention_pair_tensor = torch.cat([binary_feats], 1)
 
     mention_pair_tensor = mention_pair_tensor.to(device)
 
