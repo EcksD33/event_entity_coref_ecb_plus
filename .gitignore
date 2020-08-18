@@ -19,6 +19,4 @@ out_select/
 
 *.bat
 
-Error anaylsis/BERT/event_errors
-
-Error anaylsis/BERT/entity_errors
+Error anaylsis/
