@@ -829,7 +829,7 @@ def create_event_cluster_bow_arg_vec(event_cluster, entity_clusters, model, devi
     :param device: Pytorch device
     '''
     for event_mention in event_cluster.mentions.values():
-        event_mention.arg0_vec = torch.zeros(model.embedding_dim+model.fasttext_dim  + model.char_hidden_dim,
+        event_mention.arg0_vec = torch.zeros(model.embedding_dim  + model.char_hidden_dim,
                                   requires_grad=False).to(device).view(1, -1)
         event_mention.arg1_vec = event_mention.arg0_vec.detach().clone()
         event_mention.time_vec = event_mention.arg0_vec.detach().clone()
@@ -858,7 +858,7 @@ def create_entity_cluster_bow_predicate_vec(entity_cluster, event_clusters, mode
     :param device: Pytorch device
     '''
     for entity_mention in entity_cluster.mentions.values():
-        entity_mention.arg0_vec = torch.zeros(model.embedding_dim +model.fasttext_dim + model.char_hidden_dim,
+        entity_mention.arg0_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
                                   requires_grad=False).to(device).view(1, -1)
         entity_mention.arg1_vec = entity_mention.arg0_vec.detach().clone()
         entity_mention.time_vec = entity_mention.arg0_vec.detach().clone()
