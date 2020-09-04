@@ -20,3 +20,5 @@ out_select/
 *.bat
 
 Error anaylsis/
+
+src/selection/
