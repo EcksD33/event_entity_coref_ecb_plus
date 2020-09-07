@@ -18,3 +18,5 @@ prf
 *.bat
 
 Error anaylsis/
+
+src/selection/
