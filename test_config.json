@@ -1,7 +1,7 @@
 {"test_path":"out_features/ELMO/test_data",
 
-  "cd_event_model_path": "out_train/cd_event_best_model",
-  "cd_entity_model_path": "out_train/cd_entity_best_model",
+  "cd_event_model_path": "out_train/onlyfasttext/cd_event_best_model",
+  "cd_entity_model_path": "out_train/onlyfasttext/cd_entity_best_model",
 
   "gpu_num": 0,
   "event_merge_threshold": 0.5,
