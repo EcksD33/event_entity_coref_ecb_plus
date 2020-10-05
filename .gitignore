@@ -19,6 +19,4 @@ prf
 
 src/features/__pycache__/
 
-Error anaylsis/BERT/event_errors
-
-Error anaylsis/BERT/entity_errors
+Error anaylsis/

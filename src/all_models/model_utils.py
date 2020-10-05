@@ -1011,33 +1011,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
 
     span_tensor = mention.head_elmo_embeddings.to(torch.float32).to(device).view(1,-1)
 
-    mention_span_rep = None
-    if is_event:
-        head = mention.mention_head
-        head_tensor = find_word_embed(head, model, device)
-        char_embeds = get_char_embed(head, model, device)
-        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
-    else:
-        mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
-        mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
-                          if not is_stop(token)]
-
-        for mention_word_tensor in mention_embeds:
-            mention_bow += mention_word_tensor
-        char_embeds = get_char_embed(mention.mention_str, model, device)
-
-        if len(mention_embeds) > 0:
-            mention_bow = mention_bow / float(len(mention_embeds))
-
-        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds], 1)
-
-    if requires_grad:
-        if not mention_span_rep.requires_grad:
-            logging.info('mention_span_rep does not require grad ! (warning)')
-    else:
-        mention_span_rep = mention_span_rep.detach()
-
-    return mention_span_rep
+    return span_tensor
 
 
 def create_mention_span_representations(mentions, model, device, topic_docs, is_event,
@@ -1091,24 +1065,10 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
                                                   is_event, requires_grad)
     span_rep_1 = mention_1.span_rep
     span_rep_2 = mention_2.span_rep
+   
+    span_mul = span_rep_1*span_rep_2                
+    mention_pair_tensor = torch.cat([span_rep_1,span_rep_2,span_mul], 1)
 
- 
-    binary_feats = None
-    if is_event:
-        binary_feats = create_args_features_vec(mention_1, mention_2, other_clusters,
-                                                device, model)
-    else:
-        binary_feats = create_predicates_features_vec(mention_1, mention_2, other_clusters,
-                                                      device, model)
-    span_mul = span_rep_1*span_rep_2                                                        
-    arg0_vec_mul = mention_1.arg0_vec*mention_2.arg0_vec                                                        
-    arg1_vec_mul = mention_1.arg1_vec*mention_2.arg1_vec                                                        
-    time_vec_mul = mention_1.time_vec*mention_2.time_vec                                                        
-    loc_vec_mul = mention_1.loc_vec*mention_2.loc_vec     
-    mention_pair_tensor = torch.cat([span_rep_1, mention_1.arg0_vec, mention_1.arg1_vec, mention_1.loc_vec, mention_1.time_vec,
-                                     span_rep_2, mention_2.arg0_vec, mention_2.arg1_vec, mention_2.loc_vec, mention_2.time_vec,
-                                     span_mul, arg0_vec_mul, arg1_vec_mul, time_vec_mul, loc_vec_mul,
-                                     binary_feats], 1)
     mention_pair_tensor = mention_pair_tensor.to(device)
 
     return mention_pair_tensor
