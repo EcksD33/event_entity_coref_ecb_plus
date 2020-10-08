@@ -39,8 +39,11 @@ def create_model(config_dict):
     global word_embeds, word_to_ix, char_embeds, char_to_ix
 
     mention_rep_size = 1024
-
+        
     input_dim = mention_rep_size * 3
+
+    if config_dict["use_binary_feats"]:
+        input_dim += 4* config_dict["feature_size"]
 
     second_dim = int(input_dim / 2)
     third_dim = second_dim

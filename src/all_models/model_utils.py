@@ -1063,10 +1063,19 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
         mention_2.span_rep = get_mention_span_rep(mention_2, device, model, topic_docs,
                                                   is_event, requires_grad)
     span_rep_1 = mention_1.span_rep
-    span_rep_2 = mention_2.span_rep
-   
+    span_rep_2 = mention_2.span_rep   
     span_mul = span_rep_1*span_rep_2                
-    mention_pair_tensor = torch.cat([span_rep_1,span_rep_2,span_mul], 1)
+    
+    
+    binary_feats = None
+    if is_event:
+        binary_feats = create_args_features_vec(mention_1, mention_2, other_clusters,
+                                                device, model)
+    else:
+        binary_feats = create_predicates_features_vec(mention_1, mention_2, other_clusters,
+                                                      device, model)
+    
+    mention_pair_tensor = torch.cat([span_rep_1,span_rep_2,span_mul,binary_feats], 1)
 
     mention_pair_tensor = mention_pair_tensor.to(device)
 
