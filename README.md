@@ -10,13 +10,13 @@ Please go to [the original repo](https://github.com/shanybar/event_entity_coref_
 
 
 ## Embeddings used
-Character : https://github.com/minimaxir/char-embeddings <br/>
-Word2vec  : https://github.com/mmihaltz/word2vec-GoogleNews-vectors <br/>
-FastText  : https://pypi.org/project/FastText/ <br/>
-GloVe     : https://nlp.stanford.edu/projects/glove/ <br/>
-GPT-2     : https://huggingface.co/transformers/model_doc/gpt2.html <br/>
-BERT      : https://pypi.org/project/bert-embedding/ <br/>
-Elmo      : https://allennlp.org/elmo <br/>
+<b>Character</b> : https://github.com/minimaxir/char-embeddings <br/>
+<b>Word2vec</b>  : https://github.com/mmihaltz/word2vec-GoogleNews-vectors <br/>
+<b>FastText</b>  : https://pypi.org/project/FastText/ <br/>
+<b>GloVe</b>     : https://nlp.stanford.edu/projects/glove/ <br/>
+<b>GPT-2</b>     : https://huggingface.co/transformers/model_doc/gpt2.html <br/>
+<b>BERT</b>      : https://pypi.org/project/bert-embedding/ <br/>
+<b>Elmo</b>      : https://allennlp.org/elmo <br/>
 
 ## Branches
 
@@ -24,25 +24,25 @@ Elmo      : https://allennlp.org/elmo <br/>
 Original : Code optimizated compared to the [the original repo](https://github.com/shanybar/event_entity_coref_ecb_plus) leading to faster training time
 
 ### Ablative models
-NoStatic            : Removed GloVe embedding from orignal model <br/>
-NoContext           : Removed Elmo embedding from orignal model <br/>
-NoChar              : Removed character embedding from orignal model <br/>
-noctx-static        : Removed Elmo and GloVe embedding from orignal model <br/>
-noctx-static-char   : Removed all embedding from orignal model <br/>
+<b>NoStatic</b>            : Removed GloVe embedding from orignal model <br/>
+<b>NoContext</b>           : Removed Elmo embedding from orignal model <br/>
+<b>NoChar</b>              : Removed character embedding from orignal model <br/>
+<b>noctx-static</b>        : Removed Elmo and GloVe embedding from orignal model <br/>
+<b>noctx-static-char</b>   : Removed all embedding from orignal model <br/>
 
 ### Comparative models
-GPT-2               : Replace Elmo with GPT-2 <br/>
-BERT                : Replace Elmo with BERT <br/>
-FastText            : Replace GloVe with FastText <br/>
-Word2Vec            : Replace GloVe with Word2Vec <br/>
+<b>GPT-2</b>               : Replace Elmo with GPT-2 <br/>
+<b>BERT</b>                : Replace Elmo with BERT <br/>
+<b>FastText</b>            : Replace GloVe with FastText <br/>
+<b>Word2Vec</b>            : Replace GloVe with Word2Vec <br/>
 
 ### Comparative ablative models
-Onlybert            : Removed GloVe and character embedding from orignal model + Replace Elmo with BERT <br/>
-OnlyGPT             : Removed GloVe and character embedding from orignal model + Replace Elmo with GPT-2 <br/>
-OnlyELMO            : Removed GloVe and character embedding from orignal model <br/>
-onlyfasttext        : Removed GloVe and character embedding from orignal model + Replace GloVe with FastText <br/>
-onlyword2vec        : Removed GloVe and character embedding from orignal model + Replace GloVe with Word2Vec <br/>
-onlyglove           : Removed GloVe and character embedding from orignal model <br/>
+<b>Onlybert</b>            : Removed GloVe and character embedding from orignal model + Replace Elmo with BERT <br/>
+<b>OnlyGPT</b>             : Removed GloVe and character embedding from orignal model + Replace Elmo with GPT-2 <br/>
+<b>OnlyELMO</b>            : Removed GloVe and character embedding from orignal model <br/>
+<b>onlyfasttext</b>        : Removed GloVe and character embedding from orignal model + Replace GloVe with FastText <br/>
+<b>onlyword2vec</b>        : Removed GloVe and character embedding from orignal model + Replace GloVe with Word2Vec <br/>
+<b>onlyglove</b>           : Removed GloVe and character embedding from orignal model <br/>
 
 ## Contact info
 Contact [Judicaël POUMAY](https://github.com/gftvfrbh) at *judicael.poumay@uliege.be* for questions about this repository.
