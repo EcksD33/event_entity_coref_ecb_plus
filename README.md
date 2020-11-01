@@ -40,9 +40,9 @@ Please go to [the original repo](https://github.com/shanybar/event_entity_coref_
 <b>Onlybert</b>            : Removed GloVe and character embedding from orignal model + Replace Elmo with BERT <br/>
 <b>OnlyGPT</b>             : Removed GloVe and character embedding from orignal model + Replace Elmo with GPT-2 <br/>
 <b>OnlyELMO</b>            : Removed GloVe and character embedding from orignal model <br/>
-<b>onlyfasttext</b>        : Removed GloVe and character embedding from orignal model + Replace GloVe with FastText <br/>
-<b>onlyword2vec</b>        : Removed GloVe and character embedding from orignal model + Replace GloVe with Word2Vec <br/>
-<b>onlyglove</b>           : Removed GloVe and character embedding from orignal model <br/>
+<b>onlyfasttext</b>        : Removed Elmo and character embedding from orignal model + Replace GloVe with FastText <br/>
+<b>onlyword2vec</b>        : Removed Elmo and character embedding from orignal model + Replace GloVe with Word2Vec <br/>
+<b>onlyglove</b>           : Removed Elmo and character embedding from orignal model <br/>
 
 ## Contact info
 Contact [Judicaël POUMAY](https://github.com/gftvfrbh) at *judicael.poumay@uliege.be* for questions about this repository.
