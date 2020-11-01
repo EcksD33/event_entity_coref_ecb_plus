@@ -21,7 +21,7 @@ Please go to [the original repo](https://github.com/shanybar/event_entity_coref_
 ## Branches
 
 ### Original model
-<b>Original</b> : Code optimizated compared to the [the original repo](https://github.com/shanybar/event_entity_coref_ecb_plus) leading to faster training time
+<b>Original</b> : Code optimized compared to the [the original repo](https://github.com/shanybar/event_entity_coref_ecb_plus) leading to faster training time
 
 ### Ablative models
 <b>NoStatic</b>            : Removed GloVe embedding from orignal model <br/>
