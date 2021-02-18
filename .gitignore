@@ -10,3 +10,5 @@ resources/GloVe/*
 
 out*/
 models/
+
+data/processed/full_swirl_ecb/
