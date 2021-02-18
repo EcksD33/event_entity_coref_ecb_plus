@@ -1,22 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/
 
-out_data/
+*credentials.json
+*token.pickle
 
-out_test/
+resources/GloVe/*
 
-out_features/
-
-out_train/
-
-trained_model_n_data/
-
-*.pyc
-
-prf
-
-cc.en.300.bin
-
-out_select/
-
-*.bat
-
-Error anaylsis/
+out*/
+models/

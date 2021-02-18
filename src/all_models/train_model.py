@@ -108,25 +108,47 @@ def train_model(train_set, dev_set):
     entity_best_dev_f1 = 0
     best_event_epoch = 0
     best_entity_epoch = 0
-    
+
     patient_counter = 0
-    
+
     start_epoch = 1
+    start_topic = 0
+    shuffle_load = None  # ensures same shuffle for given epoch across checkpoints
+    rstate_load = None   # ensures same random state during training
     if(os.path.isfile(os.path.join(args.out_dir, 'cd_event_model_state'))):
-        cd_event_model, cd_event_optimizer, patient_counter, start_epoch, event_best_dev_f1   = load_training_checkpoint(cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
-        cd_entity_model, cd_entity_optimizer, patient_counter, start_epoch, entity_best_dev_f1 = load_training_checkpoint(cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)   
+        print("Resuming training from last checkpoint...")
+        shuffle_load, rstate_load, cd_event_model, cd_event_optimizer, patient_counter, start_epoch, start_topic, event_best_dev_f1 = load_training_checkpoint(
+            cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
+        shuffle_load, rstate_load, cd_entity_model, cd_entity_optimizer, patient_counter, start_epoch,  start_topic, entity_best_dev_f1 = load_training_checkpoint(
+            cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)
 
     orig_event_th = config_dict["event_merge_threshold"]
     orig_entity_th = config_dict["entity_merge_threshold"]
-    for epoch in range(start_epoch, config_dict["epochs"]+start_epoch):
-    # for epoch in range(1, 2):
+    for epoch in range(start_epoch, config_dict["epochs"]):
         logging.info('Epoch {}:'.format(str(epoch)))
         print('Epoch {}:'.format(str(epoch)))
-        topics_counter = 0
         topics_keys = list(topics.keys())
-        # topics_keys = [list(topics.keys())[0]]
+
+        # allow resuming from partial checkpoints
+        if shuffle_load is None:
+            if rstate_load is not None:
+                random.setstate(rstate_load)
+            shuffle_save = random.getstate()
+        else:
+            # ensures shuffle order is preserved st topic_counter makes sense
+            random.setstate(shuffle_load)
+            shuffle_save = shuffle_load
+            shuffle_load = None
+
         random.shuffle(topics_keys)
+        topics_counter = start_topic
+        topics_keys = topics_keys[topics_counter:]
+
         for topic_id in topics_keys:
+            if rstate_load is not None:
+                random.setstate(rstate_load)
+                rstate_load = None
+
             topics_counter += 1
             topic = topics[topic_id]
 
@@ -159,10 +181,9 @@ def train_model(train_set, dev_set):
             entity_th = config_dict["entity_merge_threshold"]
             event_th = config_dict["event_merge_threshold"]
 
-            for i in range(1,config_dict["merge_iters"]+1):
-                print('Iteration number {}'.format(i))
+            for i in range(1, config_dict["merge_iters"]+1):
+                print('\nIteration number {}'.format(i))
                 logging.info('Iteration number {}'.format(i))
-
 
                 # Entities
                 print('Train entity model and merge entity clusters...')
@@ -173,7 +194,7 @@ def train_model(train_set, dev_set):
                                 topics_counter=topics_counter, topics_num=topics_num,
                                 threshold=entity_th)
                 # Events
-                print('Train event model and merge event clusters...')
+                print('\nTrain event model and merge event clusters...')
                 logging.info('Train event model and merge event clusters...')
                 train_and_merge(clusters=event_clusters, other_clusters=entity_clusters,
                                 model=cd_event_model, optimizer=cd_event_optimizer,
@@ -181,10 +202,18 @@ def train_model(train_set, dev_set):
                                 topics_counter=topics_counter, topics_num=topics_num,
                                 threshold=event_th)
 
+            print(f"Saving partial checkpoint for epoch {epoch}, topic {topic_id}")
+            rstate_save = random.getstate()
+            save_training_checkpoint(shuffle_save, rstate_save, patient_counter, epoch, topics_counter, cd_event_model, cd_event_optimizer, event_best_dev_f1,
+                                        filename=os.path.join(args.out_dir, 'cd_event_model_state'))
+            save_training_checkpoint(shuffle_save, rstate_save, patient_counter, epoch, topics_counter, cd_entity_model, cd_entity_optimizer, entity_best_dev_f1,
+                                filename=os.path.join(args.out_dir, 'cd_entity_model_state'))
+
         print('Testing models on dev set...')
         logging.info('Testing models on dev set...')
 
         threshold_list = config_dict["dev_th_range"]
+        improved = False
         best_event_f1_for_th = 0
         best_entity_f1_for_th = 0
 
@@ -202,23 +231,24 @@ def train_model(train_set, dev_set):
         else:
             best_saved_cd_entity_model = cd_entity_model
 
-        event_threshold  = config_dict["event_merge_threshold"]
+        event_threshold = config_dict["event_merge_threshold"]
         entity_threshold = config_dict["entity_merge_threshold"]
-        print('Testing models on dev set'.format((event_threshold,entity_threshold)))
-        logging.info('Testing models on dev set'.format((event_threshold,entity_threshold)))
+        print('Testing models on dev set'.format((event_threshold, entity_threshold)))
+        logging.info('Testing models on dev set'.format((event_threshold, entity_threshold)))
 
         # test event coref on dev
         event_f1, _ = test_models(dev_set, cd_event_model, best_saved_cd_entity_model, device,
-                                          config_dict, write_clusters=False, out_dir=args.out_dir,
-                                          doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
+                                  config_dict, write_clusters=False, out_dir=args.out_dir,
+                                  doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
 
         # test entity coref on dev
         _, entity_f1 = test_models(dev_set, best_saved_cd_event_model, cd_entity_model, device,
-                                          config_dict, write_clusters=False, out_dir=args.out_dir,
-                                          doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
+                                   config_dict, write_clusters=False, out_dir=args.out_dir,
+                                   doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
         save_epoch_f1(event_f1, entity_f1, epoch, 0.5, 0.5)
 
         improved = False
+
         if event_f1 > event_best_dev_f1:
             event_best_dev_f1 = event_f1
             best_event_epoch = epoch
@@ -231,27 +261,30 @@ def train_model(train_set, dev_set):
             save_check_point(cd_entity_model, os.path.join(args.out_dir, 'cd_entity_best_model'))
             improved = True
             patient_counter = 0
-        
+
         if not improved:
             patient_counter += 1
 
-        save_training_checkpoint(patient_counter, epoch, cd_event_model, cd_event_optimizer, event_best_dev_f1,
+        start_topic = 0
+        rstate_save = random.getstate()
+        save_training_checkpoint(None, rstate_save, patient_counter, epoch+1, start_topic, cd_event_model, cd_event_optimizer, event_best_dev_f1,
                                  filename=os.path.join(args.out_dir, 'cd_event_model_state'))
-        save_training_checkpoint(patient_counter, epoch, cd_entity_model, cd_entity_optimizer, entity_best_dev_f1,
+        save_training_checkpoint(None, rstate_save, patient_counter, epoch+1, start_topic, cd_entity_model, cd_entity_optimizer, entity_best_dev_f1,
                                  filename=os.path.join(args.out_dir, 'cd_entity_model_state'))
 
+        print("\n")
         logging.info('patience : '+str(patient_counter))
         print('patience : '+str(patient_counter))
         if patient_counter >= config_dict["patient"]:
             logging.info('Early Stopping!')
-            print('Early Stopping!')
+            print('Early Stopping!\n')
             save_summary(event_best_dev_f1, entity_best_dev_f1, best_event_epoch, best_entity_epoch, epoch)
             break
 
 
 def train_and_merge(clusters, other_clusters, model, optimizer,
-                    loss, device, topic ,is_event, epoch,
-                    topics_counter, topics_num, threshold):
+                loss, device, topic ,is_event, epoch,
+                topics_counter, topics_num, threshold):
     '''
     This function trains event/entity and then uses agglomerative clustering algorithm that
     merges event/entity clusters
@@ -332,7 +365,7 @@ def save_summary(best_event_score,best_entity_score, best_event_epoch,best_entit
                                                ,best_entity_epoch, total_epochs))
 
 
-def save_training_checkpoint(patient_counter, epoch, model, optimizer, best_f1, filename):
+def save_training_checkpoint(shuffle, rstate, patient_counter, epoch, topic, model, optimizer, best_f1, filename):
     '''
     Saves model's checkpoint after each epoch
     :param epoch: epoch number
@@ -341,8 +374,9 @@ def save_training_checkpoint(patient_counter, epoch, model, optimizer, best_f1, 
     :param best_f1: the best B-cubed F1 score so far
     :param filename: the filename of the checkpoint file
     '''
-    state = {'patient_counter': patient_counter, 'epoch': epoch + 1, 'state_dict': model.state_dict(),
-             'optimizer': optimizer.state_dict(), 'best_f1': best_f1}
+    state = {'shuffle': shuffle, 'rstate': rstate, 'patient_counter': patient_counter,
+             'epoch': epoch, 'topic': topic, 'state_dict': model.state_dict(),
+             'optimizer': optimizer.state_dict(), 'best_f1': best_f1 }
     torch.save(state, filename)
 
 
@@ -357,9 +391,11 @@ def load_training_checkpoint(model, optimizer, filename, device):
     '''
     print("Loading checkpoint '{}'".format(filename))
     checkpoint = torch.load(filename)
+    shuffle = checkpoint['shuffle']
+    rstate = checkpoint['rstate']
     start_epoch = checkpoint['epoch']
+    topic = checkpoint['topic']
     patient_counter = checkpoint['patient_counter']
-    # patient_counter = 3
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     best_f1 = checkpoint['best_f1']
@@ -372,7 +408,8 @@ def load_training_checkpoint(model, optimizer, filename, device):
             if isinstance(v, torch.Tensor):
                 state[k] = v.to(device)
 
-    return model, optimizer, patient_counter, start_epoch, best_f1
+    return shuffle, rstate, model, optimizer, patient_counter, start_epoch, topic, best_f1
+
 
 def main():
     '''
