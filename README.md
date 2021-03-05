@@ -12,20 +12,9 @@ Shany Barhom, Vered Shwartz, Alon Eirew, Michael Bugert, Nils Reimers and Ido Da
 A neural model implemented in PyTorch for resolving cross-document entity and event coreference.
 The model was trained and evaluated on the ECB+ corpus.
 
-## Prerequisites
-* Python 3.6
-* [PyTorch](https://pytorch.org/) 0.4.0
-    * We specifically used PyTorch 0.4.0 with CUDA 9.0 on Linux, which can be installed using the command:
-    `pip install https://download.pytorch.org/whl/cu90/torch-0.4.0-cp36-cp36m-linux_x86_64.whl`
-* [spaCy](https://spacy.io/) 2.0.18
-    *  Install the spacy en model with `python -m spacy download en`
-* [Matplotlib](https://matplotlib.org/) 3.0.2
-* [NumPy](https://www.numpy.org/) 1.16.1
-* [NLTK](https://www.nltk.org/) 3.4
-* [scikit-learn](https://scikit-learn.org/) 0.20.2
-* [SciPy](https://www.scipy.org/) 1.2.1
-* [seaborn](https://seaborn.pydata.org/) 0.9.0
-* [AllenNLP](https://allennlp.org/) 0.5.1
+## Installation
+A conda environment file is provided to simplify the installation process.  
+To create the environment, use `conda env create -f env.yml`. Then `conda activate eecep` to activate it.
 
 ## Testing Instructions
 * Download pretrained event and entity models and pre-processed data for the ECB+ corpus at *https://drive.google.com/open?id=197jYq5lioefABWP11cr4hy4Ohh1HMPGK*
@@ -44,7 +33,7 @@ Main output:
    * `CD_test_event_mention_based.response_conll` - cross-document event coreference results in CoNLL format.
 * `conll_f1_scores.txt` - A text file contains the CoNLL coreference scorer's output (F1 score).
 
-Note - the script's configuration file (test_config.json) also requires: 
+Note - the script's configuration file (test_config.json) also requires:
    * An output file of a within-document entity coreference system on the ECB+ corpus (provided in this repo at data/external/stanford_neural_wd_entity_coref_out/ecb_wd_coref.json)
    * An output file of the document clustering algorithm that has been used in the paper (provided in this repo at data/external/document_clustering/predicted_topics)
 
@@ -67,9 +56,9 @@ Main Output:
     * `cd_entity_best_model` - the entity model that got the highest B-cubed F1 score on the dev set.
 * `summery.txt` - a summary of the training.
 
-Note - the script's configuration file (train_config.json) also requires: 
+Note - the script's configuration file (train_config.json) also requires:
    * An output file of a within-document entity coreference system on the ECB+ corpus (provided in this repo at             data/external/stanford_neural_wd_entity_coref_out)
- 
+
 
 ## Creating Data from Scratch
 This repository provides pre-processed data for the ECB+ corpus (download from *https://drive.google.com/open?id=197jYq5lioefABWP11cr4hy4Ohh1HMPGK*).

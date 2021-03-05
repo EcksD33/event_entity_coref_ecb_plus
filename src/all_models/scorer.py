@@ -1,6 +1,6 @@
 import numpy as np
 from collections import Counter
-from sklearn.utils.linear_assignment_ import linear_assignment
+from scipy.optimize import linear_sum_assignment
 
 """
 Mostly borrowed from <https://github.com/clarkkev/deep-coref/blob/master/evaluation.py>
@@ -112,8 +112,8 @@ def ceafe(clusters, gold_clusters):
     for i in range(len(gold_clusters)):
         for j in range(len(clusters)):
             scores[i, j] = phi4(gold_clusters[i], clusters[j])
-    matching = linear_assignment(-scores)
-    similarity = sum(scores[matching[:, 0], matching[:, 1]])
+    matching_rows, matching_cols = linear_sum_assignment(-scores)
+    similarity = sum(scores[matching_rows, matching_cols])
     return similarity, len(clusters), similarity, len(gold_clusters)
 
 
