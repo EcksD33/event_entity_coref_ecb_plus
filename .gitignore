@@ -7,8 +7,11 @@ __pycache__/
 *token.pickle
 
 resources/GloVe/*
+resources/ELMo/*
 
 out*/
 models/
 
 data/processed/full_swirl_ecb/
+data/raw/ECB\+_LREC2014/
+

@@ -2,7 +2,6 @@
 import os
 import csv
 import json
-import _pickle as cPickle
 import logging
 import argparse
 from mention_data import MentionData
@@ -55,11 +54,11 @@ def read_selected_sentences(filename):
     list contains all the sentences IDs that were selected from that XML filename.
     '''
     xml_to_sent_dict = {}
-    with open(filename, 'rb') as csv_file:
+    with open(filename, 'r', encoding="utf-8") as csv_file:
         reader = csv.reader(csv_file, delimiter=',')
-        reader.next()
+        next(reader, None)  # skip header
         for line in reader:
-            xml_filename = '{}_{}.xml'.format(line[0],line[1])
+            xml_filename = f"{line[0]}_{line[1]}.xml"
             sent_id = int(line[2])
 
             if xml_filename not in xml_to_sent_dict:
@@ -154,21 +153,21 @@ def calc_split_statistics(dataset_split, split_name, statistics_file_name):
 
         f.write('{} statistics\n'.format(split_name))
         f.write('-------------------------\n')
-        f.write( 'Number of event mentions - {}\n'.format(event_mentions_count))
-        f.write( 'Number of human participants mentions - {}\n'.format(human_mentions_count))
-        f.write( 'Number of non-human participants mentions - {}\n'.format(non_human_mentions_count))
-        f.write( 'Number of location mentions - {}\n'.format(loc_mentions_count))
-        f.write( 'Number of time mentions - {}\n'.format(time_mentions_count))
-        f.write( 'Total number of mentions - {}\n'.format(len(dataset_split)))
+        f.write('Number of event mentions - {}\n'.format(event_mentions_count))
+        f.write('Number of human participants mentions - {}\n'.format(human_mentions_count))
+        f.write('Number of non-human participants mentions - {}\n'.format(non_human_mentions_count))
+        f.write('Number of location mentions - {}\n'.format(loc_mentions_count))
+        f.write('Number of time mentions - {}\n'.format(time_mentions_count))
+        f.write('Total number of mentions - {}\n'.format(len(dataset_split)))
 
-        f.write( 'Number of non-continuous mentions - {}\n'.format(non_continuous_mentions_count))
-        f.write( 'Number of mentions with coref id = UNK - {}\n'.format(unk_coref_mentions_count))
-        f.write( 'Number of coref chains = {}\n'.format(len(coref_chains_dict)))
+        f.write('Number of non-continuous mentions - {}\n'.format(non_continuous_mentions_count))
+        f.write('Number of mentions with coref id = UNK - {}\n'.format(unk_coref_mentions_count))
+        f.write('Number of coref chains = {}\n'.format(len(coref_chains_dict)))
         f.write('\n')
 
 
 def save_gold_mention_statistics(train_extracted_mentions, dev_extracted_mentions,
-                                  test_extracted_mentions):
+                                 test_extracted_mentions):
     '''
     This function calculates and saves the statistics of each split (train/dev/test) into a file.
     :param train_extracted_mentions: a list that contains all the mention objects in the train split
@@ -177,10 +176,10 @@ def save_gold_mention_statistics(train_extracted_mentions, dev_extracted_mention
     '''
     logger.info('Calculate mention statistics...')
 
-    all_data_mentions = train_extracted_mentions + dev_extracted_mentions +test_extracted_mentions
+    all_data_mentions = train_extracted_mentions + dev_extracted_mentions + test_extracted_mentions
     filename = 'mention_stats.txt'
     calc_split_statistics(train_extracted_mentions, 'Train set',
-                          os.path.join(args.output_dir,filename))
+                          os.path.join(args.output_dir, filename))
 
     calc_split_statistics(dev_extracted_mentions, 'Dev set',
                             os.path.join(args.output_dir, filename))
@@ -194,8 +193,8 @@ def save_gold_mention_statistics(train_extracted_mentions, dev_extracted_mention
     logger.info('Save mention statistics...')
 
 
-def read_ecb_plus_doc(selected_sent_list, doc_filename, doc_id, file_obj,extracted_mentions,
-                       parse_all, load_singletons):
+def read_ecb_plus_doc(selected_sent_list, doc_filename, doc_id, file_obj, extracted_mentions,
+                      parse_all, load_singletons):
     '''
     This function reads an ECB+ XML file (i.e. document), extracts its gold mentions and texts.
     the text file of each split is written as 5 columns -  the first column contains the document
@@ -215,7 +214,7 @@ def read_ecb_plus_doc(selected_sent_list, doc_filename, doc_id, file_obj,extract
     :param load_singletons:  a boolean variable indicates whether to read singleton mentions as in
     Cybulska setup or whether to ignore them as in Yang setup.
     '''
-    ecb_file = open(doc_filename, 'r')
+    ecb_file = open(doc_filename, 'r', encoding="utf-8")
     tree = ET.parse(ecb_file)
     root = tree.getroot()
 
@@ -306,12 +305,12 @@ def read_ecb_plus_doc(selected_sent_list, doc_filename, doc_id, file_obj,extract
             if mid not in mapped_mid:  # singleton mention
                 mention_class = mid_to_tag[mid]
                 cls = find_mention_class(mention_class)
-                singleton_instance_id = 'Singleton_{}_{}_{}'.format(cls,mid,doc_id )
+                singleton_instance_id = 'Singleton_{}_{}_{}'.format(cls, mid, doc_id )
                 mid_to_coref_chain[mid] = singleton_instance_id
                 unmapped_tids = mid_to_tid_dict[mid]
                 for token_id in unmapped_tids:
                     if tokens[token_id].rel_id is None:
-                        tokens[token_id].rel_id = (singleton_instance_id,'padding')
+                        tokens[token_id].rel_id = (singleton_instance_id, 'padding')
 
     # creating an instance for each mention
     for mid in mid_to_tid_dict:
@@ -339,7 +338,7 @@ def read_ecb_plus_doc(selected_sent_list, doc_filename, doc_id, file_obj,extract
 
             if int(token.tok_id) not in token_numbers:
                 token_numbers.append(int(token.tok_id))
-                tokens_str.append(token.text.encode('ascii', 'ignore'))
+                tokens_str.append(token.text.encode('ascii', 'ignore').decode('ascii').strip())
 
         is_continuous = True if token_numbers == range(token_numbers[0], token_numbers[-1]+1) else False
         is_singleton = True if 'Singleton' in coref_chain else False
@@ -352,8 +351,8 @@ def read_ecb_plus_doc(selected_sent_list, doc_filename, doc_id, file_obj,extract
                     sent_id -= 1
 
             mention_obj = MentionData(doc_id, sent_id, token_numbers, ' '.join(tokens_str),
-                                       coref_chain, mention_type,is_continuous=is_continuous,
-                                       is_singleton=is_singleton, score=float(-1))
+                                      coref_chain, mention_type, is_continuous=is_continuous,
+                                      is_singleton=is_singleton, score=float(-1))
             extracted_mentions.append(mention_obj)
     prev_sent_id = None
 
@@ -377,16 +376,14 @@ def read_ecb_plus_doc(selected_sent_list, doc_filename, doc_id, file_obj,extract
         if prev_sent_id is None or prev_sent_id != sent_id:
             file_obj.write('\n')
             prev_sent_id = sent_id
-        text = token.text.encode('ascii', 'ignore')
 
-        if text == '' or text == '\t':
+        # some annotations contain whitespace which mess with feature extraction (like token t_id="39" in 2_5ecbplus)
+        text = token.text.encode('ascii', 'ignore').decode('ascii').strip()
+        if text == '':
             text = '-'
 
-        if token.rel_id is not None:
-            file_obj.write(doc_id + '\t' + str(sent_id) + '\t' + str(token_id) + '\t' + text + '\t' + \
-                            token.rel_id[0] + '\n')
-        else:
-            file_obj.write(doc_id + '\t' + str(sent_id) + '\t' + str(token_id) + '\t' + text + '\t-' + '\n')
+        token_relid = token.rel_id[0] if token.rel_id is not None else "-"
+        file_obj.write(f"{doc_id}\t{sent_id}\t{token_id}\t{text}\t{token_relid}\n")
 
 
 def obj_dict(obj):

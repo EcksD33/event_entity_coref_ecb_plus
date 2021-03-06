@@ -15,7 +15,7 @@ matched_args_same_ix = 0
 matched_events = 0
 matched_events_same_ix = 0
 
-nlp = spacy.load('en')
+nlp = spacy.load('en_core_web_sm')
 
 
 def order_docs_by_topics(docs):
@@ -61,7 +61,7 @@ def load_ECB_plus(processed_ecb_file):
             if stripped_line:
                 doc_id,sent_id,token_num,word, coref_chain = stripped_line.split('\t')
                 doc_id = doc_id.replace('.xml','')
-        except:
+        except ValueError:
             row = stripped_line.split('\t')
             clean_row = []
             for item in row:

@@ -22,7 +22,7 @@ from classes import Document, Sentence, Token, EventMention, EntityMention
 from extraction_utils import *
 
 
-nlp = spacy.load('en')
+nlp = spacy.load('en_core_web_sm')
 
 parser = argparse.ArgumentParser(description='Feature extraction (predicate-argument structures,'
                                              'mention heads, and ELMo embeddings)')
@@ -735,14 +735,14 @@ def main(args):
         load_elmo_embeddings(train_set, elmo_embedder, set_pred_mentions=False)
         load_elmo_embeddings(dev_set, elmo_embedder, set_pred_mentions=False)
         load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
-   
+
     # if config_dict["load_bert"]: # load BERT embeddings
         # bert_embedder = BERTEmbedding()
         # logger.info("Loading ELMO embeddings...")
         # load_elmo_embeddings(train_set, bert_embedder, set_pred_mentions=False)
         # load_elmo_embeddings(dev_set, bert_embedder, set_pred_mentions=False)
         # load_elmo_embeddings(test_set, bert_embedder, set_pred_mentions=True)
-        
+
     logger.info('Storing processed data...')
     with open(os.path.join(args.output_path,'training_data'), 'wb') as f:
         cPickle.dump(train_set, f)
