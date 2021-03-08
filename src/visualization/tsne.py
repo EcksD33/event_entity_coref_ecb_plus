@@ -7,7 +7,7 @@ import gzip
 import codecs
 import logging
 import numpy as np
-import _pickle as cPickle
+import pickle
 import matplotlib.pyplot as plt
 
 import argparse
@@ -81,7 +81,7 @@ def load_representations(type):
 
     '''
     with open(args.embeddings_file, 'rb') as f:
-        mention_to_rep_dict = cPickle.load(f)
+        mention_to_rep_dict = pickle.load(f)
 
     vocab = []
     vocab_cluster_id = []

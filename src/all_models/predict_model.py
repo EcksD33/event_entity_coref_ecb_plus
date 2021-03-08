@@ -11,7 +11,7 @@ for pack in os.listdir("src"):
 
 sys.path.append("/src/shared/")
 
-import _pickle as cPickle
+import pickle
 import logging
 import argparse
 
@@ -156,7 +156,7 @@ def main():
     print('Loading test data...')
     logging.info('Loading test data...')
     with open(config_dict["test_path"], 'rb') as f:
-        test_data = cPickle.load(f)
+        test_data = pickle.load(f)
 
     print('Test data have been loaded.')
     logging.info('Test data have been loaded.')

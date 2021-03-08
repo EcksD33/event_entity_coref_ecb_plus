@@ -8,7 +8,7 @@ for pack in os.listdir("src"):
 
 sys.path.append("/src/shared/")
 
-import _pickle as cPickle
+import pickle
 import logging
 import argparse
 from classes import *
@@ -128,7 +128,7 @@ def main():
     '''
     logger.info('Loading test data...')
     with open(config_dict["test_path"], 'rb') as f:
-        test_data = cPickle.load(f)
+        test_data = pickle.load(f)
 
     logger.info('Test data have been loaded.')
 
@@ -141,4 +141,3 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     main()
-

@@ -21,7 +21,7 @@
     "momentum": 0,
 
     "optimizer": "adam",
-    "patient": 7,
+    "patience": 7,
     "random_seed": 2048,
     "regressor_epochs": 1,
     "remove_singletons": false,

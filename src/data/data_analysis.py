@@ -1,7 +1,7 @@
 
 import os
 import sys
-import _pickle as cPickle
+import pickle
 import logging
 import argparse
 
@@ -189,7 +189,7 @@ def main():
     coref_args_count = 0
     logger.info('Loading data for analysis...')
     with open(args.data_path, 'rb') as f:
-        data = cPickle.load(f)
+        data = pickle.load(f)
 
     events_with_coref_arg = 0
     checked_pairs = 0

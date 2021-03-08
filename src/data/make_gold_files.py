@@ -1,6 +1,6 @@
 import os
 import sys
-import _pickle as cPickle
+import pickle
 import logging
 import argparse
 
@@ -35,7 +35,7 @@ def main():
     '''
     logger.info('Loading test data...')
     with open(args.test_path, 'rb') as f:
-        test_data = cPickle.load(f)
+        test_data = pickle.load(f)
 
     logger.info('Test data have been loaded.')
 

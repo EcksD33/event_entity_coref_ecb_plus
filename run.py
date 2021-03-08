@@ -46,8 +46,7 @@ if __name__ == "__main__":
                 nowfmt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 message = f"<p style=\"font-family: 'Lucida Console'; text-decoration: underline\">{command}</p><p style=\"font-family: 'Lucida Console'; white-space: pre\">{suberr}</p>Process was automatically restarted."
                 send_mail(cr_recipient, f"Crash Report: {nowfmt}", message)
-                print(
-                    f"Crash report was sent to {cr_recipient}{', restarting process...' if restart_on_failure else ''}")
+                print(f"Crash report was sent to {cr_recipient}{', restarting process...' if restart_on_failure else ''}")
 
         if not restart_on_failure:
             break

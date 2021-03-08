@@ -11,7 +11,7 @@ for pack in os.listdir("src"):
 
 sys.path.append("/src/shared/")
 
-import _pickle as cPickle
+import pickle
 import logging
 import argparse
 
@@ -111,43 +111,43 @@ def test_model(test_set):
     event_f1, entity_f1 = test_models(tag,False,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
     scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
-                      
+
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
     tag = "s5s5"
     event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
     scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
-                      
+
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6,0.6]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
     tag = "s6s5"
     event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
     scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
-                      
+
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6,0.5]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6,0.6]
     tag = "s5s6"
     event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
     scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
-                      
+
     config_dict["entity_merge_threshold"] = [0.9,0.8,0.7,0.6]
     config_dict["event_merge_threshold"] = [0.9,0.8,0.7,0.6]
     tag = "s6s6"
     event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
     scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
-                      
+
     config_dict["entity_merge_threshold"] = [0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5]
     config_dict["event_merge_threshold"] = [0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5]
     tag = "s5i5"
     event_f1, entity_f1 = test_models(tag,True,test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
                       doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
     scores_file.write('Experiment : {} Event F1: {} Entity F1: {}\n'.format(tag, event_f1, entity_f1))
-    
-    
+
+
     scores_file.close()
 
 
@@ -158,7 +158,7 @@ def main():
     print('Loading test data...')
     logging.info('Loading test data...')
     with open(config_dict["test_path"], 'rb') as f:
-        test_data = cPickle.load(f)
+        test_data = pickle.load(f)
 
     print('Test data have been loaded.')
     logging.info('Test data have been loaded.')

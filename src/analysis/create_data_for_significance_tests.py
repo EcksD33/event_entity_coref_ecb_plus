@@ -2,7 +2,7 @@ import os
 import sys
 import random
 import argparse
-import _pickle as cPickle
+import pickle
 from random import choices
 random.seed(1)
 
@@ -43,9 +43,9 @@ def sample_test_topics():
     print('Loading predictions files...')
 
     with open(test_A_path, 'rb') as f:
-        test_data_a = cPickle.load(f)
+        test_data_a = pickle.load(f)
     with open(test_B_path, 'rb') as f:
-        test_data_b = cPickle.load(f)
+        test_data_b = pickle.load(f)
 
     print('Finish loading predictions files.')
 

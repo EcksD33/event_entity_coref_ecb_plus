@@ -3,7 +3,7 @@ import sys
 import json
 import torch
 import argparse
-import _pickle as cPickle
+import pickle
 import logging
 
 import spacy
@@ -745,11 +745,11 @@ def main(args):
 
     logger.info('Storing processed data...')
     with open(os.path.join(args.output_path,'training_data'), 'wb') as f:
-        cPickle.dump(train_set, f)
+        pickle.dump(train_set, f)
     with open(os.path.join(args.output_path,'dev_data'), 'wb') as f:
-        cPickle.dump(dev_set, f)
+        pickle.dump(dev_set, f)
     with open(os.path.join(args.output_path, 'test_data'), 'wb') as f:
-        cPickle.dump(test_set, f)
+        pickle.dump(test_set, f)
 
 
 if __name__ == '__main__':

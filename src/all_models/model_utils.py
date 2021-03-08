@@ -1,24 +1,18 @@
 import os
-import sys
 import json
-import spacy
 import torch
 import random
 import logging
-import itertools
-import collections
 import numpy as np
 from scorer import *
-from eval_utils import *
-import _pickle as cPickle
+import pickle
 from bcubed_scorer import *
-import matplotlib.pyplot as plt
-from spacy.lang.en import English
 
+import sys
 for pack in os.listdir("src"):
     sys.path.append(os.path.join("src", pack))
 
-sys.path.append("/src/shared/")
+from eval_utils import *
 
 from classes import *
 
@@ -65,7 +59,7 @@ def load_predicted_topics(test_set, config_dict):
     '''
     new_topics = {}
     with open(config_dict["predicted_topics_path"], 'rb') as f:
-        predicted_topics = cPickle.load(f)
+        predicted_topics = pickle.load(f)
     all_docs = []
     for topic in test_set.topics.values():
         all_docs.extend(topic.docs.values())
@@ -539,12 +533,12 @@ def loadFastText(fasttext_filename):
         row = line.rstrip().split(' ')
         if len(row) > 1 and row[0] != '':
             vocab.append(row[0])
-            embd.append(row[1:])   
-            
+            embd.append(row[1:])
+
     print('Loaded FastText!')
     fin.close()
-    
-    return vocab,embd  
+
+    return vocab,embd
 
 def loadGloVe(glove_filename):
     '''
@@ -1089,7 +1083,7 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
                                                   is_event, requires_grad)
     span_rep_1 = mention_1.span_rep
     span_rep_2 = mention_2.span_rep
-    
+
     binary_feats = None
     if is_event:
         binary_feats = create_args_features_vec(mention_1, mention_2, other_clusters,
@@ -1097,11 +1091,11 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
     else:
         binary_feats = create_predicates_features_vec(mention_1, mention_2, other_clusters,
                                                       device, model)
-    span_mul = span_rep_1*span_rep_2                                                        
-    arg0_vec_mul = mention_1.arg0_vec*mention_2.arg0_vec                                                        
-    arg1_vec_mul = mention_1.arg1_vec*mention_2.arg1_vec                                                        
-    time_vec_mul = mention_1.time_vec*mention_2.time_vec                                                        
-    loc_vec_mul = mention_1.loc_vec*mention_2.loc_vec     
+    span_mul = span_rep_1*span_rep_2
+    arg0_vec_mul = mention_1.arg0_vec*mention_2.arg0_vec
+    arg1_vec_mul = mention_1.arg1_vec*mention_2.arg1_vec
+    time_vec_mul = mention_1.time_vec*mention_2.time_vec
+    loc_vec_mul = mention_1.loc_vec*mention_2.loc_vec
     mention_pair_tensor = torch.cat([span_rep_1, mention_1.arg0_vec, mention_1.arg1_vec, mention_1.loc_vec, mention_1.time_vec,
                                      span_rep_2, mention_2.arg0_vec, mention_2.arg1_vec, mention_2.loc_vec, mention_2.time_vec,
                                      span_mul, arg0_vec_mul, arg1_vec_mul, time_vec_mul, loc_vec_mul,
@@ -1356,11 +1350,11 @@ def merge_clusters(pair_to_merge, clusters ,other_clusters, is_event,
         cluster_pair = (pair[0], pair[1])
         if cluster_i in cluster_pair or cluster_j in cluster_pair:
             del curr_pairs_dict[pair]
-            
+
     clusters.remove(cluster_i)
     clusters.remove(cluster_j)
     clusters.append(new_cluster)
-    
+
     update_lexical_vectors([new_cluster], model, device ,is_event, False)
     update_args_feature_vectors([new_cluster], other_clusters, model, device, is_event)
 
@@ -1652,7 +1646,7 @@ def test_models(test_set, cd_event_model,cd_entity_model, device,
 
         # Save topics for analysis
         with open(os.path.join(out_dir,'test_topics'), 'wb') as f:
-            cPickle.dump(topics, f)
+            pickle.dump(topics, f)
 
     if config_dict["test_use_gold_mentions"]:
         event_predicted_lst = [event.cd_coref_chain for event in all_event_mentions]
@@ -1852,4 +1846,4 @@ def save_mention_representations(clusters, out_dir, is_event):
     print(len(mention_to_rep_dict))
     filename = 'event_mentions_to_rep_dict' if is_event else 'entity_mentions_to_rep_dict'
     with open(os.path.join(out_dir, filename), 'wb') as f:
-        cPickle.dump(mention_to_rep_dict, f)
+        pickle.dump(mention_to_rep_dict, f)

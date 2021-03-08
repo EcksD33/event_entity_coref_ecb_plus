@@ -10,7 +10,7 @@ import collections
 import numpy as np
 from scorer import *
 from eval_utils import *
-import _pickle as cPickle
+import pickle
 from bcubed_scorer import *
 import matplotlib.pyplot as plt
 from spacy.lang.en import English
@@ -65,7 +65,7 @@ def load_predicted_topics(test_set, config_dict):
     '''
     new_topics = {}
     with open(config_dict["predicted_topics_path"], 'rb') as f:
-        predicted_topics = cPickle.load(f)
+        predicted_topics = pickle.load(f)
     all_docs = []
     for topic in test_set.topics.values():
         all_docs.extend(topic.docs.values())
@@ -540,12 +540,12 @@ def loadFastText(fasttext_filename):
         row = line.rstrip().split(' ')
         if len(row) > 1 and row[0] != '':
             vocab.append(row[0])
-            embd.append(row[1:])   
-            
+            embd.append(row[1:])
+
     print('Loaded FastText!')
     fin.close()
-    
-    return vocab,embd  
+
+    return vocab,embd
 
 def loadGloVe(glove_filename):
     '''
@@ -1617,22 +1617,22 @@ def test_models(tag,is_th_series, test_set, cd_event_model,cd_entity_model, devi
                                    is_event=True, requires_grad=False)
 
             ent_th = config_dict["entity_merge_threshold"]
-            ev_th = config_dict["event_merge_threshold"]                  
-            if(is_th_series):      
+            ev_th = config_dict["event_merge_threshold"]
+            if(is_th_series):
                 iter = len(ent_th)
             else:
                 iter = config_dict["merge_iters"]
-            
+
             for i in range(1,iter+1):
                 print('Iteration number {}'.format(i))
-                logging.info('Iteration number {}'.format(i))                                
-                
+                logging.info('Iteration number {}'.format(i))
+
                 entity_th = ent_th
                 event_th = ev_th
                 if(is_th_series):
                     entity_th = ent_th[i-1]
-                    event_th = ev_th[i-1]                    
-                
+                    event_th = ev_th[i-1]
+
                 # Merge entities
                 print('Merge entity clusters...')
                 logging.info('Merge entity clusters...')
@@ -1875,4 +1875,4 @@ def save_mention_representations(clusters, out_dir, is_event):
     print(len(mention_to_rep_dict))
     filename = 'event_mentions_to_rep_dict' if is_event else 'entity_mentions_to_rep_dict'
     with open(os.path.join(out_dir, filename), 'wb') as f:
-        cPickle.dump(mention_to_rep_dict, f)
+        pickle.dump(mention_to_rep_dict, f)
