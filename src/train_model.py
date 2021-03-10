@@ -1,16 +1,10 @@
 import os
-# import sys
 import json
 import random
 import logging
 import argparse
 import numpy as np
 import pickle
-
-# for pack in os.listdir("src"):
-#     sys.path.append(os.path.join("src", pack))
-
-# sys.path.append("/src/shared/")
 
 parser = argparse.ArgumentParser(description="Training a regressor")
 parser.add_argument("--config_path", type=str,
@@ -45,8 +39,8 @@ import torch
 
 args.use_cuda = args.use_cuda and torch.cuda.is_available()
 
-import model_utils as MU
-import model_factory as MF
+import all_models.model_utils as MU
+import all_models.model_factory as MF
 
 torch.manual_seed(config_dict["seed"])
 if args.use_cuda:

@@ -1,15 +1,8 @@
 import os
-import gc
-import sys
 import json
 import random
 import subprocess
 import numpy as np
-
-for pack in os.listdir("src"):
-    sys.path.append(os.path.join("src", pack))
-
-sys.path.append("/src/shared/")
 
 import pickle
 import logging
@@ -17,7 +10,6 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='Testing the regressors')
-
 parser.add_argument('--config_path', type=str,
                     help=' The path configuration json file')
 parser.add_argument('--out_dir', type=str,
@@ -25,9 +17,8 @@ parser.add_argument('--out_dir', type=str,
 
 args = parser.parse_args()
 
-out_dir = args.out_dir
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
+if not os.path.exists(args.out_dir):
+    os.makedirs(args.out_dir)
 
 logging.basicConfig(filename=os.path.join(args.out_dir, "test_log.txt"),
                     level=logging.INFO, filemode="w")
@@ -37,7 +28,7 @@ with open(args.config_path, 'r') as js_file:
     config_dict = json.load(js_file)
 
 # Saves a json configuration file (test_config.json) in the experiment folder
-with open(os.path.join(args.out_dir,'test_config.json'), "w") as js_file:
+with open(os.path.join(args.out_dir, 'test_config.json'), "w") as js_file:
     json.dump(config_dict, js_file, indent=4, sort_keys=True)
 
 random.seed(config_dict["random_seed"])
@@ -60,10 +51,10 @@ if args.use_cuda:
     torch.backends.cudnn.benchmark = False
     print('Testing with CUDA')
 
-from scorer import *
-from classes import *
-from eval_utils import *
-from model_utils import *
+from all_models.scorer import *
+from shared.classes import *
+from shared.eval_utils import *
+from all_models.model_utils import *
 
 def read_conll_f1(filename):
     '''
@@ -115,8 +106,8 @@ def run_conll_scorer():
         if status is not None:
             processes.pop(0)
 
-    print ('Running scorers has been done.')
-    print ('Save results...')
+    print('Running scorers has been done.')
+    print('Save results...')
 
     scores_file = open(os.path.join(args.out_dir, 'conll_f1_scores.txt'), 'w')
 

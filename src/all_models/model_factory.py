@@ -11,7 +11,7 @@ char_embeds = None
 char_to_ix = None
 
 '''
-All functions in this script requires a configuration dictionary which contains flags and 
+All functions in this script requires a configuration dictionary which contains flags and
 other attributes for configuring the experiments.
 In this project, the configuration dictionaries are stored as JSON files (e.g. train_config.json)
 and are loaded before the training/inference starts.
@@ -49,7 +49,7 @@ def create_model(config_dict):
     input_dim = mention_rep_size * 3
 
     if config_dict["use_binary_feats"]:
-        input_dim += 4* config_dict["feature_size"]
+        input_dim += 4 * config_dict["feature_size"]
 
     second_dim = int(input_dim / 2)
     third_dim = second_dim

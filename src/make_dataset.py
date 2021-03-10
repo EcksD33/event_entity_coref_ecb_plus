@@ -4,7 +4,7 @@ import csv
 import json
 import logging
 import argparse
-from mention_data import MentionData
+from data.mention_data import MentionData
 import xml.etree.ElementTree as ET
 
 parser = argparse.ArgumentParser(description='Parsing ECB+ corpus')

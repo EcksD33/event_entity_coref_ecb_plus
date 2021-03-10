@@ -4,17 +4,17 @@ import torch
 import random
 import logging
 import numpy as np
-from scorer import *
+from all_models.scorer import *
 import pickle
-from bcubed_scorer import *
+from all_models.bcubed_scorer import *
 
 import sys
 for pack in os.listdir("src"):
     sys.path.append(os.path.join("src", pack))
 
-from eval_utils import *
+from shared.eval_utils import *
 
-from classes import *
+from shared.classes import *
 
 clusters_count = 1
 

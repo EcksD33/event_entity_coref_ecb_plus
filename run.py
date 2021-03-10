@@ -2,7 +2,7 @@ import argparse
 from datetime import datetime
 import subprocess
 
-from crash_report.crash_report import send_mail
+from src.crash_report.crash_report import send_mail
 
 
 report_on_success = True
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     mode = args.mode
-    script = f"src/all_models/{mode}_model.py"
+    script = f"src/{mode}_model.py"
     config = args.config or f"{mode}_config.json"
     cargs = ["--config_path", config, "--out_dir", args.output_directory]
     command = ["python", script] + cargs

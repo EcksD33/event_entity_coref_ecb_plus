@@ -6,12 +6,9 @@ __pycache__/
 *credentials.json
 *token.pickle
 
-resources/GloVe/*
-resources/ELMo/*
+res/data/raw/ECB\+_LREC2014/
+res/data/processed/full_swirl_ecb/
+res/models/
+res/pretrained/
 
 out*/
-models/
-
-data/processed/full_swirl_ecb/
-data/raw/ECB\+_LREC2014/
-
