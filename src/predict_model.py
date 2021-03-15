@@ -88,10 +88,10 @@ def run_conll_scorer():
     event_conll_file = os.path.join(args.out_dir,'event_scorer_cd_out.txt')
     entity_conll_file = os.path.join(args.out_dir,'entity_scorer_cd_out.txt')
 
-    event_scorer_command = ('perl scorer/scorer.pl all {} {} none > {} \n'.format
+    event_scorer_command = ('perl src/scorer/scorer.pl all {} {} none > {} \n'.format
             (config_dict["event_gold_file_path"], event_response_filename, event_conll_file))
 
-    entity_scorer_command = ('perl scorer/scorer.pl all {} {} none > {} \n'.format
+    entity_scorer_command = ('perl src/scorer/scorer.pl all {} {} none > {} \n'.format
             (config_dict["entity_gold_file_path"], entity_response_filename, entity_conll_file))
 
     processes = []
