@@ -5,6 +5,7 @@ import argparse
 import pickle
 import logging
 import spacy
+import itertools as it
 
 from features.swirl_parsing import parse_swirl_output
 from features.allen_srl_reader import read_srl
@@ -636,18 +637,21 @@ def load_elmo_embeddings(dataset, embedder, set_pred_mentions):
             for sent_id, sent in doc.get_sentences().items():
                 set_elmo_embeddings_to_mentions(embedder, sent, set_pred_mentions)
 
-# def load_skipthoughts_embeddings(dataset, embedder):
-#     for topic_id, topic in dataset.topics.items():
-#         for doc_id, doc in topic.docs.items():
-#             # compute embeddings for all sentences at once
-#             sentences = [sent for sent in doc.get_sentences().values()]
-#             embeddings = embedder.encode([sent.get_raw_sentence() for sent in sentences])
+def load_sentence_embeddings(dataset, embedder, set_pred_mentions):
+    for topic in dataset.topics.values():
+        for doc in topic.docs.values():
+            # compute embeddings for all sentences at once
+            sentences = [sent for sent in doc.get_sentences().values()]
+            embeddings = embedder([sent.get_raw_sentence() for sent in sentences])
 
-#             # set respective mentions' embeddings
-#             for sent, embed in zip(sentences, embeddings):
-#                 for mention in it.chain(sent.gold_entity_mentions, sent.pred_entity_mentions,
-#                                         sent.gold_event_mentions, sent.pred_event_mentions):
-#                     mention.sent_embeddings = torch.from_numpy(embed)
+            # set respective mentions' embeddings
+            for sent, embed in zip(sentences, embeddings):
+                mentions = it.chain(sent.gold_entity_mentions, sent.gold_event_mentions)
+                if set_pred_mentions:
+                    mentions = it.chain(mentions, sent.pred_entity_mentions, sent.pred_event_mentions)
+
+                for mention in mentions:
+                    mention.sent_embeddings = torch.from_numpy(embed)
 
 
 def main(args):
@@ -739,19 +743,17 @@ def main(args):
         load_elmo_embeddings(dev_set, elmo_embedder, set_pred_mentions=False)
         load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
 
-    # if config_dict["load_bert"]: # load BERT embeddings
-        # bert_embedder = BERTEmbedding()
-        # logger.info("Loading ELMO embeddings...")
-        # load_elmo_embeddings(train_set, bert_embedder, set_pred_mentions=False)
-        # load_elmo_embeddings(dev_set, bert_embedder, set_pred_mentions=False)
-        # load_elmo_embeddings(test_set, bert_embedder, set_pred_mentions=True)
+    logger.info("Loading sentence embeddings...")
+    from sent2vec.vectorizer import Vectorizer
 
-    # logger.info("Loading skip-thoughts embeddings...")
-    # model = skipthoughts.load_model()
-    # encoder = skipthoughts.Encoder(model)
-    # load_skipthoughts_embeddings(train_set, encoder)
-    # load_skipthoughts_embeddings(dev_set, encoder)
-    # load_skipthoughts_embeddings(test_set, encoder)
+    model = Vectorizer()
+    def embedder(X):
+        model.bert(X)
+        return np.array(model.vectors)
+
+    load_sentence_embeddings(train_set, embedder, set_pred_mentions=True)
+    load_sentence_embeddings(dev_set, embedder, set_pred_mentions=True)
+    load_sentence_embeddings(test_set, embedder, set_pred_mentions=True)
 
     logger.info('Storing processed data...')
     with open(os.path.join(args.output_path,'training_data'), 'wb') as f:

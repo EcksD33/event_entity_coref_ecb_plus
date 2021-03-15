@@ -17,7 +17,7 @@ if not os.path.exists(args.out_dir):
     os.makedirs(args.out_dir)
 
 logging.basicConfig(filename=os.path.join(args.out_dir, "train_log.txt"),
-                    level=logging.DEBUG, filemode="w")
+                    level=logging.DEBUG, filemode="a")
 
 # Load json config file
 with open(args.config_path, "r") as js_file:
@@ -217,16 +217,16 @@ def train_model(train_set, dev_set):
         # test event coref on dev
         event_f1, _ = MU.test_models(dev_set, cd_event_model, best_saved_cd_entity_model, device,
                                   config_dict, write_clusters=False, out_dir=args.out_dir,
-                                  doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
+                                  doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False, epoch=epoch)
 
         # test entity coref on dev
         _, entity_f1 = MU.test_models(dev_set, best_saved_cd_event_model, cd_entity_model, device,
                                    config_dict, write_clusters=False, out_dir=args.out_dir,
-                                   doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False)
+                                   doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False, epoch=epoch)
+
         save_epoch_f1(event_f1, entity_f1, epoch, 0.5, 0.5)
 
         improved = False
-
         if event_f1 > event_best_dev_f1:
             event_best_dev_f1 = event_f1
             best_event_epoch = epoch

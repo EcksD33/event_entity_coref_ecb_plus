@@ -135,7 +135,7 @@ def test_model(test_set):
     doc_to_entity_mentions = load_entity_wd_clusters(config_dict)
 
     _,_ = test_models(test_set, cd_event_model, cd_entity_model, device, config_dict, write_clusters=True, out_dir=args.out_dir,
-                      doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True)
+                      doc_to_entity_mentions=doc_to_entity_mentions,analyze_scores=True, epoch=-1)
 
     run_conll_scorer()
 

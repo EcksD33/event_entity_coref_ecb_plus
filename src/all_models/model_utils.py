@@ -1003,12 +1003,13 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
     '''
 
     span_tensor = mention.head_elmo_embeddings.to(device).view(1,-1)
+    sent_tensor = mention.sent_embeddings.to(device).view(1,-1)
     mention_span_rep = None
     if is_event:
         head = mention.mention_head
         head_tensor = find_word_embed(head, model, device)
         char_embeds = get_char_embed(head, model, device)
-        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, head_tensor, char_embeds, sent_tensor], 1)
     else:
         mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
         mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
@@ -1021,7 +1022,7 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         if len(mention_embeds) > 0:
             mention_bow = mention_bow / float(len(mention_embeds))
 
-        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds], 1)
+        mention_span_rep = torch.cat([span_tensor, mention_bow, char_embeds, sent_tensor], 1)
 
     if requires_grad:
         if not mention_span_rep.requires_grad:
@@ -1504,8 +1505,9 @@ def test_model(clusters, other_clusters, model, device, topic_docs, is_event, ep
           use_binary_feats)
 
 
-def test_models(test_set, cd_event_model,cd_entity_model, device,
-                config_dict, write_clusters, out_dir, doc_to_entity_mentions, analyze_scores):
+def test_models(test_set, cd_event_model,cd_entity_model, device, config_dict,
+                write_clusters, out_dir, doc_to_entity_mentions, analyze_scores,
+                epoch):
     '''
     Runs the inference procedure for both event and entity models calculates the B-cubed
     score of their predictions.
@@ -1537,7 +1539,6 @@ def test_models(test_set, cd_event_model,cd_entity_model, device,
     topics_num = len(topics.keys())
     topics_counter = 0
     topics_keys = topics.keys()
-    epoch = 0 #
     all_event_mentions = []
     all_entity_mentions = []
 
