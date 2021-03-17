@@ -4,17 +4,12 @@ import torch
 import random
 import logging
 import numpy as np
-from all_models.scorer import *
 import pickle
-from all_models.bcubed_scorer import *
 
-import sys
-for pack in os.listdir("src"):
-    sys.path.append(os.path.join("src", pack))
-
-from shared.eval_utils import *
-
-from shared.classes import *
+import shared.classes as C
+import all_models.model_utils as MU
+from all_models.bcubed_scorer import bcubed
+import all_models.model_factory as MF
 
 clusters_count = 1
 
@@ -42,7 +37,7 @@ def merge_sub_topics_to_topics(test_set):
     for topic_id in topics_keys:
         topic = test_set.topics[topic_id]
         if get_topic(topic_id) not in new_topics:
-            new_topics[get_topic(topic_id)] = Topic(get_topic(topic_id))
+            new_topics[get_topic(topic_id)] = C.Topic(get_topic(topic_id))
         new_topics[get_topic(topic_id)].docs.update(topic.docs)
 
     return new_topics
@@ -69,7 +64,7 @@ def load_predicted_topics(test_set, config_dict):
     topic_counter = 1
     for topic in predicted_topics:
         topic_id = str(topic_counter)
-        new_topics[topic_id] = Topic(topic_id)
+        new_topics[topic_id] = C.Topic(topic_id)
 
         for doc_name in topic:
             print(topic_id)
@@ -179,14 +174,14 @@ def init_entity_wd_clusters(entity_mentions, doc_to_entity_mentions):
                 doc_to_clusters[doc_id] = {}
             pred_coref_chain = found_entity[4]
             if pred_coref_chain not in doc_to_clusters[doc_id]:
-                doc_to_clusters[doc_id][pred_coref_chain] = Cluster(is_event=False)
+                doc_to_clusters[doc_id][pred_coref_chain] = C.Cluster(is_event=False)
             doc_to_clusters[doc_id][pred_coref_chain].mentions[entity.mention_id] = entity
         else:
             doc_id = entity.doc_id
             if doc_id not in all_entity_clusters:
                 all_entity_clusters[doc_id] = []
 
-            singleton = Cluster(is_event=False)
+            singleton = C.Cluster(is_event=False)
             singleton.mentions[entity.mention_id] = entity
             all_entity_clusters[doc_id].append(singleton)
 
@@ -244,7 +239,7 @@ def init_wd(mentions, is_event):
         mention_doc_id = mention.doc_id
         if mention_doc_id not in wd_clusters:
             wd_clusters[mention_doc_id] = []
-        cluster = Cluster(is_event=is_event)
+        cluster = C.Cluster(is_event=is_event)
         cluster.mentions[mention.mention_id] = mention
         wd_clusters[mention_doc_id].append(cluster)
 
@@ -261,53 +256,11 @@ def init_cd(mentions, is_event):
     '''
     clusters = []
     for mention in mentions:
-        cluster = Cluster(is_event=is_event)
+        cluster = C.Cluster(is_event=is_event)
         cluster.mentions[mention.mention_id] = mention
         clusters.append(cluster)
 
     return clusters
-
-
-def load_embeddings(embed_path, vocab_path):
-    '''
-    load embeddings from a binary file and a file contains the vocabulary.
-    :param embed_path: path to the embeddings' binary file
-    :param vocab_path: path to the vocabulary file
-    :return: word_embeds - a numpy array containing the word vectors, vocab - a list containing the
-    vocabulary.
-    '''
-    with open(embed_path,'rb') as f:
-        word_embeds = np.load(f)
-
-    vocab = []
-    for line in open(vocab_path, 'r'):
-        vocab.append(line.strip())
-
-    return word_embeds, vocab
-
-
-def load_one_hot_char_embeddings(char_vocab_path):
-    '''
-    Loads character vocabulary and creates one hot embedding to each character which later
-    can be used to initialize the character embeddings (experimental)
-    :param char_vocab_path: a path to the vocabulary file
-    :return: char_embeds - a numpy array containing the char vectors, vocab - a list containing the
-    vocabulary.
-    '''
-    vocab = []
-    for line in open(char_vocab_path, 'r'):
-        vocab.append(line.strip())
-
-    char_to_ix = {}
-    for char in vocab:
-        char_to_ix[char] = len(char_to_ix)
-
-    char_to_ix[' '] = len(char_to_ix)
-    char_to_ix['<UNK>'] = len(char_to_ix)
-
-    char_embeds = np.eye(len(char_to_ix))
-
-    return char_embeds, char_to_ix
 
 
 def is_stop(w):
@@ -351,20 +304,19 @@ def find_word_embed(word, model, device):
     :param device: Pytorch device (gpu/cpu)
     :return: a word vector
     '''
-    word_to_ix = model.word_to_ix
     word = clean_word(word)
-    if word in word_to_ix:
-        word_ix = [word_to_ix[word]]
+    if word in MF.word_to_ix:
+        word_ix = [MF.word_to_ix[word]]
     else:
         lower_word = word.lower()
-        if lower_word in word_to_ix:
-            word_ix = [word_to_ix[lower_word]]
+        if lower_word in MF.word_to_ix:
+            word_ix = [MF.word_to_ix[lower_word]]
         else:
-            word_ix = [word_to_ix['unk']]
+            word_ix = [MF.word_to_ix['unk']]
 
-    word_tensor = model.embed(torch.tensor(word_ix,dtype=torch.long).to(device))
+    word_tensor = MF.word_embed(torch.tensor(word_ix, dtype=torch.long))
 
-    return word_tensor
+    return word_tensor.to(device)
 
 
 def find_mention_cluster(mention_id, clusters):
@@ -398,7 +350,7 @@ def is_system_coref(mention_id_1, mention_id_2, clusters):
         return True
     return False
 
-def create_args_features_vec(mention_1, mention_2 ,entity_clusters, device, model):
+def create_args_features_vec(mention_1, mention_2, entity_clusters, device, model):
     '''
     Creates a vector for four binary features (one for each role - Arg0/Arg1/location/time)
     indicate whether two event mentions share a coreferrential argument in the same role.
@@ -417,10 +369,10 @@ def create_args_features_vec(mention_1, mention_2 ,entity_clusters, device, mode
     coref_tmp = 0
 
     if coref_a0 == 0 and mention_1.arg0 is not None and mention_2.arg0 is not None:
-        if is_system_coref(mention_1.arg0[1], mention_2.arg0[1],entity_clusters):
+        if is_system_coref(mention_1.arg0[1], mention_2.arg0[1], entity_clusters):
             coref_a0 = 1
     if coref_a1 == 0 and mention_1.arg1 is not None and mention_2.arg1 is not None:
-        if is_system_coref(mention_1.arg1[1], mention_2.arg1[1],entity_clusters):
+        if is_system_coref(mention_1.arg1[1], mention_2.arg1[1], entity_clusters):
             coref_a1 = 1
     if coref_loc == 0 and mention_1.amloc is not None and mention_2.amloc is not None:
         if is_system_coref(mention_1.amloc[1], mention_2.amloc[1],entity_clusters):
@@ -499,7 +451,7 @@ def float_to_tensor(float_num, device):
     :param device: Pytorch device (cpu/gpu)
     :return: a tensor
     '''
-    float_tensor = torch.tensor([float(float_num)], requires_grad=False).to(device).view(1, -1)
+    float_tensor = torch.tensor([float(float_num)], requires_grad=False).to(device).view(1,-1)
 
     return float_tensor
 
@@ -540,28 +492,6 @@ def loadFastText(fasttext_filename):
 
     return vocab,embd
 
-def loadGloVe(glove_filename):
-    '''
-    Loads Glove word vectors.
-    :param glove_filename: Glove file
-    :return: vocab - list contains the vocabulary ,embd - list of word vectors
-    '''
-    vocab = []
-    embd = []
-    file = open(glove_filename,'r', encoding='utf-8')
-    for line in file.readlines():
-        row = line.strip().split(' ')
-        if len(row) > 1:
-            if row[0] != '':
-                vocab.append(row[0])
-                embd.append(row[1:])
-                if len(row[1:]) != 300:
-                    print(len(row[1:]))
-    print('Loaded GloVe!')
-    file.close()
-
-    return vocab,embd
-
 
 def get_sub_topics(doc_id):
     '''
@@ -593,7 +523,7 @@ def separate_clusters_to_sub_topics(clusters, is_event):
                 sub_topics_to_clusters[mention_sub_topic] = []
             sub_topics_to_clusters[mention_sub_topic].append(mention)
         for sub_topic, mention_list in sub_topics_to_clusters.items():
-            new_cluster = Cluster(is_event)
+            new_cluster = C.Cluster(is_event)
             for mention in mention_list:
                 new_cluster.mentions[mention.mention_id] = mention
             new_clusters.append(new_cluster)
@@ -672,7 +602,7 @@ def create_gold_wd_clusters_organized_by_doc(mentions, is_event):
 
     for doc_id, gold_chain_in_doc in wd_clusters.items():
         for gold_chain_id, gold_chain in gold_chain_in_doc.items():
-            cluster = Cluster(is_event)
+            cluster = C.Cluster(is_event)
             for mention in gold_chain:
                 cluster.mentions[mention.mention_id] = mention
             if doc_id not in clusters_by_doc:
@@ -691,14 +621,14 @@ def write_event_coref_results(corpus, out_dir, config_dict):
     '''
     if not config_dict["test_use_gold_mentions"]:
         out_file = os.path.join(out_dir, 'CD_test_event_span_based.response_conll')
-        write_span_based_cd_coref_clusters(corpus, out_file, is_event=True, is_gold=False,
+        MU.write_span_based_cd_coref_clusters(corpus, out_file, is_event=True, is_gold=False,
                                            use_gold_mentions=config_dict["test_use_gold_mentions"])
     else:
         out_file = os.path.join(out_dir, 'CD_test_event_mention_based.response_conll')
-        write_mention_based_cd_clusters(corpus, is_event=True, is_gold=False, out_file=out_file)
+        MU.write_mention_based_cd_clusters(corpus, is_event=True, is_gold=False, out_file=out_file)
 
         out_file = os.path.join(out_dir, 'WD_test_event_mention_based.response_conll')
-        write_mention_based_wd_clusters(corpus, is_event=True, is_gold=False, out_file=out_file)
+        MU.write_mention_based_wd_clusters(corpus, is_event=True, is_gold=False, out_file=out_file)
 
 
 def write_entity_coref_results(corpus, out_dir,config_dict):
@@ -710,14 +640,14 @@ def write_entity_coref_results(corpus, out_dir,config_dict):
     '''
     if not config_dict["test_use_gold_mentions"]:
         out_file = os.path.join(out_dir, 'CD_test_entity_span_based.response_conll')
-        write_span_based_cd_coref_clusters(corpus, out_file, is_event=False, is_gold=False,
+        MU.write_span_based_cd_coref_clusters(corpus, out_file, is_event=False, is_gold=False,
                                            use_gold_mentions=config_dict["test_use_gold_mentions"])
     else:
         out_file = os.path.join(out_dir, 'CD_test_entity_mention_based.response_conll')
-        write_mention_based_cd_clusters(corpus, is_event=False, is_gold=False, out_file=out_file)
+        MU.write_mention_based_cd_clusters(corpus, is_event=False, is_gold=False, out_file=out_file)
 
         out_file = os.path.join(out_dir, 'WD_test_entity_mention_based.response_conll')
-        write_mention_based_wd_clusters(corpus, is_event=False, is_gold=False, out_file=out_file)
+        MU.write_mention_based_wd_clusters(corpus, is_event=False, is_gold=False, out_file=out_file)
 
 
 def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_embeds,
@@ -1202,10 +1132,8 @@ def train(cluster_pairs, model, optimizer, loss_function, device, topic_docs, ep
             total_loss += loss.item()
 
             if samples_count % config_dict["log_interval"] == 0:
-                print('epoch {}, topic {}/{} - {} model '
-                      ' [{}/{} ({:.0f}%)]  Loss: {:.6f}'.format(
-                    epoch,topics_counter, topics_num, mode, samples_count, len(pairs),
-                    100. * samples_count / len(pairs), (total_loss/float(batches_count))))
+                print(f"epoch {epoch} topic {topics_counter}/{topics_num} - {mode} model "
+                      f" [{samples_count}/{len(pairs)} ({100. * samples_count / len(pairs):.0f}%)]  Loss: {total_loss/float(batches_count):.6f}")
 
             del batch_tensor, q_tensor
 
@@ -1342,7 +1270,7 @@ def merge_clusters(pair_to_merge, clusters ,other_clusters, is_event,
     '''
     cluster_i = pair_to_merge[0]
     cluster_j = pair_to_merge[1]
-    new_cluster = Cluster(is_event)
+    new_cluster = C.Cluster(is_event)
     new_cluster.mentions.update(cluster_j.mentions)
     new_cluster.mentions.update(cluster_i.mentions)
 
@@ -1625,12 +1553,12 @@ def test_models(test_set, cd_event_model,cd_entity_model, device, config_dict,
                 all_entity_clusters.extend(topic_entity_clusters)
 
                 with open(os.path.join(out_dir, 'entity_clusters.txt'), 'a') as entity_file_obj:
-                    write_clusters_to_file(topic_entity_clusters, entity_file_obj, topic_id)
+                    MU.write_clusters_to_file(topic_entity_clusters, entity_file_obj, topic_id)
                     entity_errors.extend(collect_errors(topic_entity_clusters, topic_event_clusters, topic.docs,
                                                         is_event=False))
 
                 with open(os.path.join(out_dir, 'event_clusters.txt'), 'a') as event_file_obj:
-                    write_clusters_to_file(topic_event_clusters, event_file_obj, topic_id)
+                    MU.write_clusters_to_file(topic_event_clusters, event_file_obj, topic_id)
                     event_errors.extend(collect_errors(topic_event_clusters, topic_entity_clusters, topic.docs,
                                                        is_event=True))
 
@@ -1697,7 +1625,7 @@ def init_clusters_with_lemma_baseline(mentions, is_event):
         mentions_by_head_lemma[mention.mention_head_lemma].append(mention)
 
     for head_lemma, mentions in mentions_by_head_lemma.items():
-        cluster = Cluster(is_event=is_event)
+        cluster = C.Cluster(is_event=is_event)
         for mention in mentions:
             cluster.mentions[mention.mention_id] = mention
         clusters.append(cluster)

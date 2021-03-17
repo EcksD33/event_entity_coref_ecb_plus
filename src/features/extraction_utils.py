@@ -59,8 +59,8 @@ def load_ECB_plus(processed_ecb_file):
         stripped_line = line.strip()
         try:
             if stripped_line:
-                doc_id,sent_id,token_num,word, coref_chain = stripped_line.split('\t')
-                doc_id = doc_id.replace('.xml','')
+                doc_id, sent_id, token_num, word, coref_chain = stripped_line.split('\t')
+                doc_id = doc_id.replace('.xml', '')
         except ValueError:
             row = stripped_line.split('\t')
             clean_row = []
@@ -91,10 +91,10 @@ def load_ECB_plus(processed_ecb_file):
             if sent_changed:
                 new_sent = Sentence(sent_id)
                 sent_changed = False
-                new_doc.add_sentence(sent_id,new_sent)
+                new_doc.add_sentence(sent_id, new_sent)
                 last_sent_id = sent_id
 
-            new_tok = Token(token_num,word,'-')
+            new_tok = Token(token_num, word, '-')
             new_sent.add_token(new_tok)
 
     return docs
@@ -106,7 +106,7 @@ def find_args_by_dependency_parsing(dataset, is_gold):
     :param dataset: an object represents the split (Corpus object)
     :param is_gold: whether to match arguments and predicates with gold or predicted mentions
     '''
-    global matched_args, matched_args_same_ix, matched_events,matched_events_same_ix
+    global matched_args, matched_args_same_ix, matched_events, matched_events_same_ix
     matched_args = 0
     matched_args_same_ix = 0
     matched_events = 0

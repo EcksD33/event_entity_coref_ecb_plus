@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np
 import torch
 import argparse
 import pickle
@@ -7,11 +8,11 @@ import logging
 import spacy
 import itertools as it
 
+from features.create_elmo_embeddings import ElmoEmbedding
 from features.swirl_parsing import parse_swirl_output
 from features.allen_srl_reader import read_srl
-from features.create_elmo_embeddings import *
 from shared.classes import EventMention, EntityMention
-from features.extraction_utils import *
+import features.extraction_utils as EU
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -55,7 +56,7 @@ def load_mentions_from_json(mentions_json_file, docs, is_event, is_gold_mentions
         mention_type = js_mention["mention_type"]
         is_singleton = js_mention["is_singleton"]
         is_continuous = js_mention["is_continuous"]
-        mention_str = js_mention["tokens_str"]
+        mention_str = js_mention["tokens_str"].strip()
         coref_chain = js_mention["coref_chain"]
         if mention_str is None:
             print(js_mention)
@@ -131,7 +132,7 @@ def load_gold_data(split_txt_file, events_json, entities_json):
     :return:
     '''
     logger.info('Loading gold mentions...')
-    docs = load_ECB_plus(split_txt_file)
+    docs = EU.load_ECB_plus(split_txt_file)
     load_gold_mentions(docs, events_json, entities_json)
     return docs
 
@@ -161,10 +162,10 @@ def find_head(x):
         if tok.head == tok:
             if tok.lemma_ == u'-PRON-':
                 return tok.text, tok.text.lower()
-            return tok.text,tok.lemma_
+            return tok.text, tok.lemma_
 
 
-def have_string_match(mention,arg_str ,arg_start, arg_end):
+def have_string_match(mention, arg_str, arg_start, arg_end):
     '''
     This function checks whether a given entity mention has a string match (strict or relaxed)
     with a span of an extracted argument
@@ -183,7 +184,8 @@ def have_string_match(mention,arg_str ,arg_start, arg_end):
         return True
     if arg_start >= mention.start_offset and arg_end <= mention.end_offset:  # the mention span contains the mention span
         return True
-    if len(set(mention.tokens_numbers).intersection(set(range(arg_start,arg_end + 1)))) > 0: # intersection between the mention's tokens and the argument's tokens
+    # intersection between the mention's tokens and the argument's tokens
+    if len(set(mention.tokens_numbers).intersection(set(range(arg_start, arg_end + 1)))) > 0:
         return True
     return False
 
@@ -281,7 +283,7 @@ def match_allen_srl_structures(dataset, srl_data, is_gold):
                 if not config_dict["use_dep"]:
                     sent_str = sent.get_raw_sentence()
                     parsed_sent = nlp(sent_str)
-                    find_nominalizations_args(parsed_sent, sent, is_gold)
+                    EU.find_nominalizations_args(parsed_sent, sent, is_gold)
                 sent_srl_info = None
 
                 if doc_id in srl_data:
@@ -402,7 +404,7 @@ def load_srl_info(dataset, srl_data, is_gold):
                 if not config_dict["use_dep"]:
                     sent_str = sent.get_raw_sentence()
                     parsed_sent = nlp(sent_str)
-                    find_nominalizations_args(parsed_sent, sent, is_gold)
+                    EU.find_nominalizations_args(parsed_sent, sent, is_gold)
                 sent_srl_info = {}
 
                 if doc_id in srl_data:
@@ -678,9 +680,9 @@ def main(args):
     if config_dict["load_predicted_mentions"]:
         load_predicted_data(test_data, config_dict["pred_event_mentions"], config_dict["pred_entity_mentions"])
 
-    train_set = order_docs_by_topics(training_data)
-    dev_set = order_docs_by_topics(dev_data)
-    test_set = order_docs_by_topics(test_data)
+    train_set = EU.order_docs_by_topics(training_data)
+    dev_set = EU.order_docs_by_topics(dev_data)
+    test_set = EU.order_docs_by_topics(test_data)
 
     write_dataset_statistics('train', train_set, check_predicted=False)
 
@@ -716,25 +718,25 @@ def main(args):
     if config_dict["use_dep"]:  # use dependency parsing
         logger.info('Augmenting predicate-arguments structures using dependency parser')
         logger.info('Training gold mentions - loading predicates and their arguments with dependency parser')
-        find_args_by_dependency_parsing(train_set, is_gold=True)
+        EU.find_args_by_dependency_parsing(train_set, is_gold=True)
         logger.info('Dev gold mentions - loading predicates and their arguments with dependency parser')
-        find_args_by_dependency_parsing(dev_set, is_gold=True)
+        EU.find_args_by_dependency_parsing(dev_set, is_gold=True)
         logger.info('Test gold mentions - loading predicates and their arguments with dependency parser')
-        find_args_by_dependency_parsing(test_set, is_gold=True)
+        EU.find_args_by_dependency_parsing(test_set, is_gold=True)
         if config_dict["load_predicted_mentions"]:
             logger.info('Test predicted mentions - loading predicates and their arguments with dependency parser')
-            find_args_by_dependency_parsing(test_set, is_gold=False)
+            EU.find_args_by_dependency_parsing(test_set, is_gold=False)
     if config_dict["use_left_right_mentions"]:  # use left and right mentions heuristic
         logger.info('Augmenting predicate-arguments structures using leftmost and rightmost entity mentions')
         logger.info('Training gold mentions - loading predicates and their arguments ')
-        find_left_and_right_mentions(train_set, is_gold=True)
+        EU.find_left_and_right_mentions(train_set, is_gold=True)
         logger.info('Dev gold mentions - loading predicates and their arguments ')
-        find_left_and_right_mentions(dev_set, is_gold=True)
+        EU.find_left_and_right_mentions(dev_set, is_gold=True)
         logger.info('Test gold mentions - loading predicates and their arguments ')
-        find_left_and_right_mentions(test_set, is_gold=True)
+        EU.find_left_and_right_mentions(test_set, is_gold=True)
         if config_dict["load_predicted_mentions"]:
             logger.info('Test predicted mentions - loading predicates and their arguments ')
-            find_left_and_right_mentions(test_set, is_gold=False)
+            EU.find_left_and_right_mentions(test_set, is_gold=False)
 
     if config_dict["load_elmo"]: # load ELMo embeddings
         elmo_embedder = ElmoEmbedding(config_dict["options_file"], config_dict["weight_file"])
@@ -743,17 +745,13 @@ def main(args):
         load_elmo_embeddings(dev_set, elmo_embedder, set_pred_mentions=False)
         load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
 
-    logger.info("Loading sentence embeddings...")
-    from sent2vec.vectorizer import Vectorizer
-
-    model = Vectorizer()
-    def embedder(X):
-        model.bert(X)
-        return np.array(model.vectors)
-
-    load_sentence_embeddings(train_set, embedder, set_pred_mentions=True)
-    load_sentence_embeddings(dev_set, embedder, set_pred_mentions=True)
-    load_sentence_embeddings(test_set, embedder, set_pred_mentions=True)
+    if config_dict["use_sentembed"]:
+        logger.info("Loading sentence embeddings...")
+        from features.sentembeds import get_embedder
+        embedder = get_embedder(config_dict["use_sentembed"])
+        load_sentence_embeddings(train_set, embedder, set_pred_mentions=False)
+        load_sentence_embeddings(dev_set, embedder, set_pred_mentions=False)
+        load_sentence_embeddings(test_set, embedder, set_pred_mentions=True)
 
     logger.info('Storing processed data...')
     with open(os.path.join(args.output_path,'training_data'), 'wb') as f:

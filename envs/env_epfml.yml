@@ -1,0 +1,26 @@
+name: eecep_epfml
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - python=3.8.*
+  - perl
+  - pytorch=1.7.*
+  - spacy
+  - spacy-model-en_core_web_sm
+  - cupy
+  - cudatoolkit
+  - nltk
+  - numpy
+  - scikit-learn
+  - scipy
+  - seaborn
+  - matplotlib
+  - google-api-python-client
+  - google-auth-httplib2
+  - google-auth-oauthlib
+  - pip:
+    - allennlp==1.5.*
+    - sent2vec-prebuilt

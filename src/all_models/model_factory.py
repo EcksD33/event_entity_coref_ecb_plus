@@ -1,14 +1,17 @@
-from models import *
-from model_utils import *
+import logging
+import numpy as np
+import torch
 import torch.nn as nn
 import torch.optim as optim
-import logging
+
+import all_models.models as M
 
 
 word_embeds = None
 word_to_ix = None
 char_embeds = None
 char_to_ix = None
+word_embed = None
 
 '''
 All functions in this script requires a configuration dictionary which contains flags and
@@ -25,8 +28,11 @@ def factory_load_embeddings(config_dict):
     this function loads the initial character embeddings and pre-trained word embeddings.
     :param config_dict: s configuration dictionary
     '''
-    global word_embeds, word_to_ix, char_embeds, char_to_ix
+    global word_embeds, word_to_ix, char_embeds, char_to_ix, word_embed
     word_embeds, word_to_ix, char_embeds, char_to_ix = load_model_embeddings(config_dict)
+    word_embed = nn.Embedding.from_pretrained(torch.from_numpy(word_embeds))
+    word_embed.weight.requires_grad = False  # pre-trained word embeddings are fixed
+    print("Loaded embeddings")
 
 
 def create_model(config_dict):
@@ -56,13 +62,13 @@ def create_model(config_dict):
     third_dim = second_dim
     model_dims = [input_dim, second_dim, third_dim]
 
-    model = CDCorefScorer(word_embeds, word_to_ix, word_embeds.shape[0],
-                          char_embedding=char_embeds, char_to_ix=char_to_ix,
-                          char_rep_size=config_dict["char_rep_size"],
-                          dims=model_dims,
-                          use_mult=config_dict["use_mult"],
-                          use_diff=config_dict["use_diff"],
-                          feature_size=config_dict["feature_size"])
+    model = M.CDCorefScorer(word_embeds, word_to_ix, word_embeds.shape[0],
+                            char_embedding=char_embeds, char_to_ix=char_to_ix,
+                            char_rep_size=config_dict["char_rep_size"],
+                            dims=model_dims,
+                            use_mult=config_dict["use_mult"],
+                            use_diff=config_dict["use_diff"],
+                            feature_size=config_dict["feature_size"])
 
     return model
 
@@ -122,7 +128,7 @@ def load_model_embeddings(config_dict):
     # load pre-trained word embeddings
     vocab, embd = loadGloVe(config_dict["glove_path"])
     # vocab, embd = loadFastText(config_dict["ft_path"])
-    word_embeds = np.asarray(embd, dtype=np.float64)
+    word_embeds = np.asarray(embd, dtype=np.float32)
 
     i = 0
     word_to_ix = {}
@@ -157,3 +163,68 @@ def load_model_embeddings(config_dict):
         char_embeds, char_to_ix = load_one_hot_char_embeddings(config_dict["char_vocab_path"])
 
     return word_embeds, word_to_ix, char_embeds, char_to_ix
+
+
+def loadGloVe(glove_filename):
+    '''
+    Loads Glove word vectors.
+    :param glove_filename: Glove file
+    :return: vocab - list contains the vocabulary ,embd - list of word vectors
+    '''
+    vocab = []
+    embd = []
+    file = open(glove_filename, 'r', encoding='utf-8')
+    for line in file.readlines():
+        row = line.strip().split(' ')
+        if len(row) > 1:
+            if row[0] != '':
+                vocab.append(row[0])
+                embd.append(row[1:])
+                if len(row[1:]) != 300:
+                    print(len(row[1:]))
+    print('Loaded GloVe!')
+    file.close()
+
+    return vocab, embd
+
+
+def load_embeddings(embed_path, vocab_path):
+    '''
+    load embeddings from a binary file and a file contains the vocabulary.
+    :param embed_path: path to the embeddings' binary file
+    :param vocab_path: path to the vocabulary file
+    :return: word_embeds - a numpy array containing the word vectors, vocab - a list containing the
+    vocabulary.
+    '''
+    with open(embed_path, 'rb') as f:
+        word_embeds = np.load(f)
+
+    vocab = []
+    for line in open(vocab_path, 'r'):
+        vocab.append(line.strip())
+
+    return word_embeds, vocab
+
+
+def load_one_hot_char_embeddings(char_vocab_path):
+    '''
+    Loads character vocabulary and creates one hot embedding to each character which later
+    can be used to initialize the character embeddings (experimental)
+    :param char_vocab_path: a path to the vocabulary file
+    :return: char_embeds - a numpy array containing the char vectors, vocab - a list containing the
+    vocabulary.
+    '''
+    vocab = []
+    for line in open(char_vocab_path, 'r'):
+        vocab.append(line.strip())
+
+    char_to_ix = {}
+    for char in vocab:
+        char_to_ix[char] = len(char_to_ix)
+
+    char_to_ix[' '] = len(char_to_ix)
+    char_to_ix['<UNK>'] = len(char_to_ix)
+
+    char_embeds = np.eye(len(char_to_ix))
+
+    return char_embeds, char_to_ix

@@ -25,7 +25,7 @@
   "load_elmo": true,
   "load_bert": false,
   "options_file": "res/data/elmo_options.json",
-  "weight_file": "res/data/elmo_weights.hdf5"
+  "weight_file": "res/data/elmo_weights.hdf5",
 
-
+  "use_sentembed": ""
 }

@@ -1,0 +1,1 @@
+from .sent2vec import Sent2vecModel

@@ -6,6 +6,7 @@ import argparse
 import numpy as np
 import pickle
 
+
 parser = argparse.ArgumentParser(description="Training a regressor")
 parser.add_argument("--config_path", type=str,
                     help=" The path configuration json file")
@@ -46,7 +47,8 @@ torch.manual_seed(config_dict["seed"])
 if args.use_cuda:
     torch.cuda.manual_seed(config_dict["seed"])
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    # torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.benchmark = True
     print("Training with CUDA")
 
 
@@ -64,14 +66,11 @@ def train_model(train_set, dev_set):
 
     doc_to_entity_mentions = MU.load_entity_wd_clusters(config_dict)  # loads predicted WD entity coref chains from external tool
 
-    print("Create new models...")
+    print("Setting up...")
     logging.info("Create new models...")
     MF.factory_load_embeddings(config_dict)  # loading pre-trained embeddings before creating new models
     cd_event_model = MF.create_model(config_dict)
     cd_entity_model = MF.create_model(config_dict)
-
-    cd_event_model = cd_event_model.to(device)
-    cd_entity_model = cd_entity_model.to(device)
 
     cd_event_optimizer = MF.create_optimizer(config_dict, cd_event_model)
     cd_entity_optimizer = MF.create_optimizer(config_dict, cd_entity_model)
@@ -99,7 +98,11 @@ def train_model(train_set, dev_set):
             cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
         shuffle_load, rstate_load, cd_entity_model, cd_entity_optimizer, patience_counter, start_epoch,  start_topic, entity_best_dev_f1 = load_training_checkpoint(
             cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)
+    else:
+        cd_event_model = cd_event_model.to(device)
+        cd_entity_model = cd_entity_model.to(device)
 
+    torch.cuda.empty_cache()
     orig_event_th = config_dict["event_merge_threshold"]
     orig_entity_th = config_dict["entity_merge_threshold"]
     for epoch in range(start_epoch, config_dict["epochs"]):
@@ -190,6 +193,8 @@ def train_model(train_set, dev_set):
         print("\nTesting models on dev set...")
         logging.info("Testing models on dev set...")
 
+        torch.cuda.empty_cache()
+
         threshold_list = config_dict["dev_th_range"]
         improved = False
         best_event_f1_for_th = 0
@@ -223,6 +228,10 @@ def train_model(train_set, dev_set):
         _, entity_f1 = MU.test_models(dev_set, best_saved_cd_event_model, cd_entity_model, device,
                                    config_dict, write_clusters=False, out_dir=args.out_dir,
                                    doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False, epoch=epoch)
+
+        del best_saved_cd_event_model
+        del best_saved_cd_entity_model
+        torch.cuda.empty_cache()
 
         save_epoch_f1(event_f1, entity_f1, epoch, 0.5, 0.5)
 
@@ -377,11 +386,7 @@ def load_training_checkpoint(model, optimizer, filename, device):
     best_f1 = checkpoint['best_f1']
     print(f"Loaded checkpoint '{filename}' (epoch {checkpoint['epoch']})")
 
-    model = model.to(device)
-    for state in optimizer.state.values():
-        for k, v in state.items():
-            if isinstance(v, torch.Tensor):
-                state[k] = v.to(device)
+    # no need to send these tensors to the device, torch.load already does that
 
     return shuffle, rstate, model, optimizer, patience_counter, start_epoch, topic, best_f1
 
@@ -396,11 +401,17 @@ def main():
     Finally, it saves the entity and event models that achieved the best B-cubed scores
     on the dev set.
     '''
+    import shared.classes
+    sys.modules['classes'] = shared.classes
+
     logging.info('Loading training and dev data...')
     with open(config_dict["train_path"], 'rb') as f:
         training_data = pickle.load(f)
     with open(config_dict["dev_path"], 'rb') as f:
         dev_data = pickle.load(f)
+
+    del sys.modules['classes']
+    del shared.classes
 
     logging.info('Training and dev data have been loaded.')
 

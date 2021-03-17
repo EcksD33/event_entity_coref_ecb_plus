@@ -1,0 +1,28 @@
+name: eecep_pdrm83
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - python
+  - perl
+  - pytorch=1.7.1
+  - gensim
+  - transformers=4.2.2
+  - spacy
+  - spacy-model-en_core_web_sm
+  - cupy
+  - cudatoolkit
+  - nltk
+  - numpy
+  - scikit-learn
+  - scipy
+  - seaborn
+  - matplotlib
+  - google-api-python-client
+  - google-auth-httplib2
+  - google-auth-oauthlib
+  - pip:
+    - allennlp
+    - sent2vec

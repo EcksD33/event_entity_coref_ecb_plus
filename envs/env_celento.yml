@@ -1,0 +1,29 @@
+name: eecep_celento
+channels:
+  - pytorch
+  - msys2
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - python=3.8.*
+  - perl
+  - cython
+  - libpython
+  - m2w64-toolchain
+  - pytorch=1.7.*
+  - spacy
+  - spacy-model-en_core_web_sm
+  - cupy
+  - cudatoolkit
+  - nltk
+  - numpy
+  - scikit-learn
+  - scipy
+  - seaborn
+  - matplotlib
+  - google-api-python-client
+  - google-auth-httplib2
+  - google-auth-oauthlib
+  - pip:
+    - allennlp==1.5.*
