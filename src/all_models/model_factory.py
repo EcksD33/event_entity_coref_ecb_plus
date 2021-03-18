@@ -30,8 +30,7 @@ def factory_load_embeddings(config_dict):
     '''
     global word_embeds, word_to_ix, char_embeds, char_to_ix, word_embed
     word_embeds, word_to_ix, char_embeds, char_to_ix = load_model_embeddings(config_dict)
-    word_embed = nn.Embedding.from_pretrained(torch.from_numpy(word_embeds))
-    word_embed.weight.requires_grad = False  # pre-trained word embeddings are fixed
+    word_embed = nn.Embedding.from_pretrained(torch.from_numpy(word_embeds), freeze=True)
     print("Loaded embeddings")
 
 
@@ -162,6 +161,8 @@ def load_model_embeddings(config_dict):
         logging.info('Loading one-hot char embeddings...')
         char_embeds, char_to_ix = load_one_hot_char_embeddings(config_dict["char_vocab_path"])
 
+    char_embeds = char_embeds.astype(np.float32)
+
     return word_embeds, word_to_ix, char_embeds, char_to_ix
 
 
@@ -197,7 +198,7 @@ def load_embeddings(embed_path, vocab_path):
     vocabulary.
     '''
     with open(embed_path, 'rb') as f:
-        word_embeds = np.load(f)
+        word_embeds = np.load(f).astype(np.float32)
 
     vocab = []
     for line in open(vocab_path, 'r'):

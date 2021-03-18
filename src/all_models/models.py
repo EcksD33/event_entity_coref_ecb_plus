@@ -35,9 +35,8 @@ class CDCorefScorer(nn.Module):
         # self.word_to_ix = word_to_ix
         self.embedding_dim = word_embeds.shape[1]
 
-        self.char_embeddings = nn.Embedding(len(char_to_ix.keys()), char_embedding.shape[1])
-        self.char_embeddings.weight.data.copy_(torch.from_numpy(char_embedding))
-        self.char_embeddings.weight.requires_grad = True
+        # FIXME freeze should be True since these embeddings are pretrained...
+        self.char_embeddings = nn.Embedding.from_pretrained(torch.from_numpy(char_embedding), freeze=False)
         self.char_to_ix = char_to_ix
         self.char_hidden_dim = char_rep_size
 
@@ -120,6 +119,6 @@ class CDCorefScorer(nn.Module):
                 else:
                     idxs.append(self.char_to_ix['<UNK>'])
                     print('can find char {}'.format(w))
-        tensor = torch.tensor(idxs,dtype=torch.long).to(device)
+        tensor = torch.tensor(idxs, dtype=torch.long).to(device)
 
         return tensor

@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import random
 import logging
@@ -98,9 +99,9 @@ def train_model(train_set, dev_set):
             cd_event_model, cd_event_optimizer, os.path.join(args.out_dir, 'cd_event_model_state'), device)
         shuffle_load, rstate_load, cd_entity_model, cd_entity_optimizer, patience_counter, start_epoch,  start_topic, entity_best_dev_f1 = load_training_checkpoint(
             cd_entity_model, cd_entity_optimizer, os.path.join(args.out_dir, 'cd_entity_model_state'), device)
-    else:
-        cd_event_model = cd_event_model.to(device)
-        cd_entity_model = cd_entity_model.to(device)
+
+    cd_event_model = cd_event_model.to(device)
+    cd_entity_model = cd_entity_model.to(device)
 
     torch.cuda.empty_cache()
     orig_event_th = config_dict["event_merge_threshold"]
@@ -374,8 +375,7 @@ def load_training_checkpoint(model, optimizer, filename, device):
     :param device: gpu/cpu device
     :return: model, optimizer, epoch, best_f1 loaded from the checkpoint.
     '''
-    print(f"Loading checkpoint '{filename}'")
-    checkpoint = torch.load(filename)
+    checkpoint = torch.load(filename, map_location=torch.device('cpu'))
     shuffle = checkpoint['shuffle']
     rstate = checkpoint['rstate']
     start_epoch = checkpoint['epoch']
@@ -386,7 +386,10 @@ def load_training_checkpoint(model, optimizer, filename, device):
     best_f1 = checkpoint['best_f1']
     print(f"Loaded checkpoint '{filename}' (epoch {checkpoint['epoch']})")
 
-    # no need to send these tensors to the device, torch.load already does that
+    for state in optimizer.state.values():
+        for k, v in state.items():
+            if isinstance(v, torch.Tensor):
+                state[k] = v.to(device)
 
     return shuffle, rstate, model, optimizer, patience_counter, start_epoch, topic, best_f1
 
