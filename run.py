@@ -62,11 +62,12 @@ if __name__ == "__main__":
         print("Reports require an email address, exiting.")
         exit()
 
+    do_backoff = True
     backoffs = exponential_backoff()
     backoff = next(backoffs)
 
     returncode = None
-    while returncode != 0:
+    while restart_on_failure and returncode != 0:
         print(f"Executing command {command}\n")
         last_start = time.time()
         process = subprocess.Popen(command, encoding='utf-8',
@@ -81,20 +82,18 @@ if __name__ == "__main__":
                 send_mail(cr_recipient, f"Crash Report: {nowfmt}", message)
                 print(f"Crash report was sent to {cr_recipient}{', restarting process...' if restart_on_failure else ''}")
 
-        if not restart_on_failure:
-            break
+            if do_backoff:
+                if time.time() - last_start >= RESET_BACKOFF_AFTER:
+                    backoffs = exponential_backoff()
+                    backoff = next(backoffs)
+                    print(f"<backoff> was reset after more than {RESET_BACKOFF_AFTER}s of operation")
 
-        if time.time() - last_start >= RESET_BACKOFF_AFTER:
-            backoffs = exponential_backoff()
-            backoff = next(backoffs)
-            print(f"<backoff> was reset after more than {RESET_BACKOFF_AFTER}s of operation")
-
-        print(f"Program crashed! Backing off for {backoff}s...")
-        verbose_sleep(backoff)
-        backoff = next(backoffs)
-        sys.stdout.write(f" -- backoff now set to {backoff}s\n\n")
+                print(f"Program crashed! Backing off for {backoff}s...")
+                verbose_sleep(backoff)
+                backoff = next(backoffs)
+                sys.stdout.write(f" -- backoff now set to {backoff}s\n\n")
 
     if report_on_completion:
         nowfmt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         send_mail(cr_recipient, f"Completion Report {nowfmt}",
-                  f"<p style=\"font-family: 'Lucida Console'; text-decoration: underline\">{command}</p>finished successfully, automatic reporting and restarting is ending.")
+                  f"<p style=\"font-family: 'Lucida Console'; text-decoration: underline\">{command}</p>completed, automatic reporting and restarting is ending.")
