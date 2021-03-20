@@ -7,6 +7,10 @@ import argparse
 import numpy as np
 import pickle
 
+# os.environ['GPU_DEBUG'] = "0"
+# import gpu_profiling.gpu_profile as gpup
+# sys.settrace(gpup.gpu_profile)
+
 
 parser = argparse.ArgumentParser(description="Training a regressor")
 parser.add_argument("--config_path", type=str,
@@ -165,7 +169,7 @@ def train_model(train_set, dev_set):
 
             for i in range(1, config_dict["merge_iters"]+1):
                 print()
-                logging.info("\nIteration number {i}")
+                logging.info(f"\nIteration number {i}")
 
                 # Entities
                 print("Train entity model and merge entity clusters...")
@@ -184,12 +188,13 @@ def train_model(train_set, dev_set):
                                 topics_counter=topics_counter, topics_num=topics_num,
                                 threshold=event_th)
 
-            print(f"\nSaving partial checkpoint for epoch {epoch}, topic {topic_id}")
-            rstate_save = random.getstate()
-            save_training_checkpoint(shuffle_save, rstate_save, patience_counter, epoch, topics_counter, cd_event_model, cd_event_optimizer, event_best_dev_f1,
-                                     filename=os.path.join(args.out_dir, 'cd_event_model_state'))
-            save_training_checkpoint(shuffle_save, rstate_save, patience_counter, epoch, topics_counter, cd_entity_model, cd_entity_optimizer, entity_best_dev_f1,
-                                     filename=os.path.join(args.out_dir, 'cd_entity_model_state'))
+            if config_dict["save_every_topic"]:
+                print(f"\nSaving partial checkpoint for epoch {epoch}, topic {topic_id}")
+                rstate_save = random.getstate()
+                save_training_checkpoint(shuffle_save, rstate_save, patience_counter, epoch, topics_counter, cd_event_model, cd_event_optimizer, event_best_dev_f1,
+                                         filename=os.path.join(args.out_dir, 'cd_event_model_state'))
+                save_training_checkpoint(shuffle_save, rstate_save, patience_counter, epoch, topics_counter, cd_entity_model, cd_entity_optimizer, entity_best_dev_f1,
+                                         filename=os.path.join(args.out_dir, 'cd_entity_model_state'))
 
         print("\nTesting models on dev set...")
         logging.info("Testing models on dev set...")
@@ -222,12 +227,12 @@ def train_model(train_set, dev_set):
 
         # test event coref on dev
         event_f1, _ = MU.test_models(dev_set, cd_event_model, best_saved_cd_entity_model, device,
-                                  config_dict, write_clusters=False, out_dir=args.out_dir,
+                                  write_clusters=False, out_dir=args.out_dir, config_dict=config_dict,
                                   doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False, epoch=epoch)
 
         # test entity coref on dev
         _, entity_f1 = MU.test_models(dev_set, best_saved_cd_event_model, cd_entity_model, device,
-                                   config_dict, write_clusters=False, out_dir=args.out_dir,
+                                   write_clusters=False, out_dir=args.out_dir, config_dict=config_dict,
                                    doc_to_entity_mentions=doc_to_entity_mentions, analyze_scores=False, epoch=epoch)
 
         del best_saved_cd_event_model
@@ -299,8 +304,8 @@ def train_and_merge(clusters, other_clusters, model, optimizer,
 
     # Train pairwise event/entity coreference scorer
     MU.train(cluster_pairs, model, optimizer, loss, device, topic.docs,
-             epoch, topics_counter, topics_num, config_dict, is_event,
-             other_clusters)
+             epoch, topics_counter, topics_num, is_event,
+             other_clusters, config_dict)
 
     with torch.no_grad():
         MU.update_lexical_vectors(clusters, model, device, is_event, requires_grad=False)
@@ -317,8 +322,7 @@ def train_and_merge(clusters, other_clusters, model, optimizer,
 
         # Merge clusters till reaching the threshold
         MU.merge(clusters, cluster_pairs, other_clusters, model, device, topic.docs, epoch,
-              topics_counter, topics_num, threshold, is_event,
-              config_dict["use_args_feats"], config_dict["use_binary_feats"])
+                 topics_counter, topics_num, threshold, is_event, config_dict)
 
 
 def save_epoch_f1(event_f1, entity_f1, epoch,  best_event_th, best_entity_th):

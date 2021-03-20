@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from collections import namedtuple
+
+
+CPUonly = namedtuple('CPUonly', ['char_embed', 'word_embed'])
 
 
 class CDCorefScorer(nn.Module):
@@ -29,15 +33,18 @@ class CDCorefScorer(nn.Module):
         '''
         super(CDCorefScorer, self).__init__()
 
-        # self.embed = nn.Embedding(vocab_size, word_embeds.shape[1])
-        # self.embed.weight.data.copy_(torch.from_numpy(word_embeds))
-        # self.embed.weight.requires_grad = False  # pre-trained word embeddings are fixed
-        # self.word_to_ix = word_to_ix
-        self.embedding_dim = word_embeds.shape[1]
+        # Main network
+        self.input_dim = dims[0]
+        self.hidden_dim_1 = dims[1]
+        self.hidden_dim_2 = dims[2]
+        self.out_dim = 1
 
-        # FIXME freeze should be True since these embeddings are pretrained...
-        self.char_embeddings = nn.Embedding.from_pretrained(torch.from_numpy(char_embedding), freeze=False)
-        self.char_to_ix = char_to_ix
+        self.hidden_layer_1 = nn.Linear(self.input_dim, self.hidden_dim_1)
+        self.hidden_layer_2 = nn.Linear(self.hidden_dim_1, self.hidden_dim_2)
+        self.out_layer = nn.Linear(self.hidden_dim_2, self.out_dim)
+
+        # Learnable submodules
+        self.embedding_dim = word_embeds.shape[1]
         self.char_hidden_dim = char_rep_size
 
         self.char_lstm = nn.LSTM(input_size=char_embedding.shape[1],
@@ -48,16 +55,15 @@ class CDCorefScorer(nn.Module):
         # binary features for coreferring arguments/predicates
         self.coref_role_embeds = nn.Embedding(2, feature_size)
 
+        # Fixed indexers and pretrained embeddings, always in CPU
+        self.CPU = CPUonly(nn.Embedding.from_pretrained(torch.from_numpy(char_embedding), freeze=True),
+                           nn.Embedding.from_pretrained(torch.from_numpy(word_embeds), freeze=True))
+        self.char_to_ix = char_to_ix
+        self.word_to_ix = word_to_ix
+
+        # Settings
         self.use_mult = use_mult
         self.use_diff = use_diff
-        self.input_dim = dims[0]
-        self.hidden_dim_1 = dims[1]
-        self.hidden_dim_2 = dims[2]
-        self.out_dim = 1
-
-        self.hidden_layer_1 = nn.Linear(self.input_dim, self.hidden_dim_1)
-        self.hidden_layer_2 = nn.Linear(self.hidden_dim_1, self.hidden_dim_2)
-        self.out_layer = nn.Linear(self.hidden_dim_2, self.out_dim)
 
         self.model_type = 'CD_scorer'
 
@@ -93,19 +99,18 @@ class CDCorefScorer(nn.Module):
         :return: the LSTM's last output state
         '''
         char_hidden = self.init_char_hidden(device)
-        input_char_seq = self.prepare_chars_seq(seq, device)
-        char_embeds = self.char_embeddings(input_char_seq).view(len(seq), 1, -1)
+        input_char_seq = self.prepare_chars_seq(seq)
+        char_embeds = self.CPU.char_embed(input_char_seq).view(len(seq), 1, -1).to(device)
         char_lstm_out, char_hidden = self.char_lstm(char_embeds, char_hidden)
         char_vec = char_lstm_out[-1]
 
         return char_vec
 
-    def prepare_chars_seq(self, seq, device):
+    def prepare_chars_seq(self, seq):
         '''
         Given a string represents a word or a phrase, this method converts the sequence
         to a list of character embeddings
         :param seq: a string represents a word or a phrase
-        :param device: device:  gpu/cpu Pytorch device
         :return: a list of character embeddings
         '''
         idxs = []
@@ -119,6 +124,6 @@ class CDCorefScorer(nn.Module):
                 else:
                     idxs.append(self.char_to_ix['<UNK>'])
                     print('can find char {}'.format(w))
-        tensor = torch.tensor(idxs, dtype=torch.long).to(device)
+        tensor = torch.tensor(idxs, dtype=torch.long)
 
         return tensor

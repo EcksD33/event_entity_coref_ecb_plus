@@ -1,9 +1,7 @@
 import os
-import gc
 import sys
 import json
 import random
-import subprocess
 import numpy as np
 
 for pack in os.listdir("src"):
@@ -60,10 +58,10 @@ if args.use_cuda:
     torch.backends.cudnn.benchmark = False
     print('Testing with CUDA')
 
-from scorer import *
-from classes import *
-from eval_utils import *
-from model_utils import *
+from shared.classes import *
+from shared.eval_utils import *
+from all_models.scorer import *
+from all_models.model_utils import *
 
 def test_model(test_set):
     '''
@@ -167,5 +165,4 @@ def main():
 
 
 if __name__ == '__main__':
-
     main()

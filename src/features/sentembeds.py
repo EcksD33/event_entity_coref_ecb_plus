@@ -2,10 +2,6 @@
 Do note that some of these require some setup and different dependencies.
 """
 
-
-from numpy import dtype
-
-
 def get_embedder(which: str):
     which = which.lower().strip()
 

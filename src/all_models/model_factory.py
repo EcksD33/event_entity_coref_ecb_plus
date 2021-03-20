@@ -1,6 +1,5 @@
 import logging
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.optim as optim
 
@@ -11,7 +10,6 @@ word_embeds = None
 word_to_ix = None
 char_embeds = None
 char_to_ix = None
-word_embed = None
 
 '''
 All functions in this script requires a configuration dictionary which contains flags and
@@ -28,9 +26,8 @@ def factory_load_embeddings(config_dict):
     this function loads the initial character embeddings and pre-trained word embeddings.
     :param config_dict: s configuration dictionary
     '''
-    global word_embeds, word_to_ix, char_embeds, char_to_ix, word_embed
+    global word_embeds, word_to_ix, char_embeds, char_to_ix
     word_embeds, word_to_ix, char_embeds, char_to_ix = load_model_embeddings(config_dict)
-    word_embed = nn.Embedding.from_pretrained(torch.from_numpy(word_embeds), freeze=True)
     print("Loaded embeddings")
 
 
@@ -43,23 +40,34 @@ def create_model(config_dict):
     '''
     global word_embeds, word_to_ix, char_embeds, char_to_ix
 
-    context_vector_size = 1024
+    size_per_mention = 0
 
     if config_dict["use_args_feats"]:
-        mention_rep_size = context_vector_size + \
-                            ((word_embeds.shape[1] + config_dict["char_rep_size"]) * 5)
+        size_per_mention += (word_embeds.shape[1] + config_dict["char_rep_size"]) * 5
     else:
-        mention_rep_size = context_vector_size + word_embeds.shape[1] + config_dict["char_rep_size"]
+        size_per_mention += word_embeds.shape[1] + config_dict["char_rep_size"]
 
-    mention_rep_size += config_dict["sent_rep_size"]
-    input_dim = mention_rep_size * 3
+    if config_dict["use_contextembed"]:
+        size_per_mention += config_dict["contextembed_size"]
+
+    if config_dict["use_sentembed"]:
+        size_per_mention += config_dict["sentembed_size"]
+
+    input_dim = size_per_mention*2     # 2 mentions
+
+    if config_dict["use_mult"]:
+        input_dim += size_per_mention  # element-wise mult all in mention
+    if config_dict["use_diff"]:
+        input_dim += size_per_mention  # element-wise diff all in mention
 
     if config_dict["use_binary_feats"]:
-        input_dim += 4 * config_dict["feature_size"]
+        input_dim += 4*config_dict["feature_size"]
 
     second_dim = int(input_dim / 2)
     third_dim = second_dim
     model_dims = [input_dim, second_dim, third_dim]
+
+    print(f"Model dimensions: {model_dims}")
 
     model = M.CDCorefScorer(word_embeds, word_to_ix, word_embeds.shape[0],
                             char_embedding=char_embeds, char_to_ix=char_to_ix,
@@ -82,7 +90,7 @@ def create_optimizer(config_dict, model):
     '''
     lr = config_dict["lr"]
     optimizer = None
-    parameters = filter(lambda p: p.requires_grad,model.parameters())
+    parameters = filter(lambda p: p.requires_grad, model.parameters())
     if config_dict["optimizer"] == 'adadelta':
         optimizer = optim.Adadelta(parameters, lr=lr,
                                    weight_decay=config_dict["weight_decay"])
@@ -185,6 +193,22 @@ def loadGloVe(glove_filename):
                     print(len(row[1:]))
     print('Loaded GloVe!')
     file.close()
+
+    return vocab, embd
+
+
+def loadFastText(fasttext_filename):
+    with open(fasttext_filename, 'r', encoding='utf-8', newline='\n', errors='ignore') as fin:
+        n, d = map(int, fin.readline().split())
+        vocab = []
+        embd = []
+        for line in fin:
+            row = line.rstrip().split(' ')
+            if len(row) > 1 and row[0] != '':
+                vocab.append(row[0])
+                embd.append(row[1:])
+
+    print('Loaded FastText!')
 
     return vocab, embd
 
