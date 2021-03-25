@@ -9857,7 +9857,7 @@
 44_15ecbplus	0	8	Mission	HUM18184966441918857
 44_15ecbplus	0	9	Critical	HUM18184966441918857
 44_15ecbplus	0	10	Facilities	HUM18184966441918857
-44_15ecbplus	0	11	news		Singleton_ACT_9_44_15ecbplus
+44_15ecbplus	0	11	news	Singleton_ACT_9_44_15ecbplus
 
 44_15ecbplus	2	0	Technology	Singleton_NON_43_44_15ecbplus
 44_15ecbplus	2	1	products	Singleton_NON_43_44_15ecbplus
