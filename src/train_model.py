@@ -209,14 +209,14 @@ def train_model(train_set, dev_set):
         if event_best_dev_f1 > 0:
             best_saved_cd_event_model = MU.load_check_point(os.path.join(args.out_dir,
                                                                       'cd_event_best_model'))
-            best_saved_cd_event_model.to(device)
+            # best_saved_cd_event_model.to(device)
         else:
             best_saved_cd_event_model = cd_event_model
 
         if entity_best_dev_f1 > 0:
             best_saved_cd_entity_model = MU.load_check_point(os.path.join(args.out_dir,
                                                                        'cd_entity_best_model'))
-            best_saved_cd_entity_model.to(device)
+            # best_saved_cd_entity_model.to(device)
         else:
             best_saved_cd_entity_model = cd_entity_model
 
@@ -336,7 +336,7 @@ def save_epoch_f1(event_f1, entity_f1, epoch,  best_event_th, best_entity_th):
     :param best_entity_th: best found merging threshold for event coreference
     '''
     with open(os.path.join(args.out_dir, 'epochs_scores.txt'), 'a') as f:
-        f.write(f"Epoch {epoch} - Event F1: {event_f1:.3f} with th = {best_event_th} Entity F1: {entity_f1:.3f} with th = {best_entity_th}\n")
+        f.write(f"Epoch {epoch} - Event F1: {event_f1:.4f} with th = {best_event_th} Entity F1: {entity_f1:.4f} with th = {best_entity_th}\n")
 
 
 def save_summary(best_event_score, best_entity_score, best_event_epoch, best_entity_epoch, total_epochs):
@@ -350,8 +350,8 @@ def save_summary(best_event_score, best_entity_score, best_event_epoch, best_ent
     :param total_epochs: total number of epochs
     '''
     with open(os.path.join(args.out_dir, 'summary.txt'), 'w') as f:
-        f.write(f"Best Event F1: {best_event_score:.3f} epoch: {best_event_epoch}\n"
-                f"Best Entity F1: {best_entity_score:.3f} epoch: "
+        f.write(f"Best Event F1: {best_event_score:.4f} epoch: {best_event_epoch}\n"
+                f"Best Entity F1: {best_entity_score:.4f} epoch: "
                 f"{best_entity_epoch} \n Training epochs: {total_epochs}")
 
 

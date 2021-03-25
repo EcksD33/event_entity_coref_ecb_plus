@@ -289,7 +289,7 @@ def get_char_embed(word, model, device):
     :param device: Pytorch device (gpu/cpu)
     :return:  the character-LSTM's last output vector
     '''
-    char_vec = model.get_char_embeds(word, device)
+    char_vec = model.get_char_embeds(word, device).cpu()
 
     return char_vec
 
@@ -315,7 +315,7 @@ def find_word_embed(word, model, device):
 
     word_tensor = model.CPU.word_embed(torch.tensor(word_ix, dtype=torch.long))
 
-    return word_tensor.to(device)
+    return word_tensor
 
 
 def find_mention_cluster(mention_id, clusters):
@@ -382,13 +382,13 @@ def create_args_features_vec(mention_1, mention_2, entity_clusters, device, mode
             coref_tmp = 1
 
     arg0_tensor = model.coref_role_embeds(torch.tensor(coref_a0,
-                                                       dtype=torch.long).to(device)).view(1,-1)
+                                                       dtype=torch.long)).view(1,-1)
     arg1_tensor = model.coref_role_embeds(torch.tensor(coref_a1,
-                                                       dtype=torch.long).to(device)).view(1,-1)
+                                                       dtype=torch.long)).view(1,-1)
     amloc_tensor = model.coref_role_embeds(torch.tensor(coref_loc,
-                                                        dtype=torch.long).to(device)).view(1,-1)
+                                                        dtype=torch.long)).view(1,-1)
     amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_tmp,
-                                                        dtype=torch.long).to(device)).view(1,-1)
+                                                        dtype=torch.long)).view(1,-1)
 
     args_features_tensor = torch.cat([arg0_tensor, arg1_tensor, amloc_tensor, amtmp_tensor], 1)
 
@@ -431,13 +431,13 @@ def create_predicates_features_vec(mention_1, mention_2, event_clusters, device,
                     coref_pred_tmp = 1
 
     arg0_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a0,
-                                                       dtype=torch.long).to(device)).view(1,-1)
+                                                       dtype=torch.long)).view(1,-1)
     arg1_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a1,
-                                                       dtype=torch.long).to(device)).view(1,-1)
+                                                       dtype=torch.long)).view(1,-1)
     amloc_tensor = model.coref_role_embeds(torch.tensor(coref_pred_loc,
-                                                        dtype=torch.long).to(device)).view(1,-1)
+                                                        dtype=torch.long)).view(1,-1)
     amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_pred_tmp,
-                                                        dtype=torch.long).to(device)).view(1,-1)
+                                                        dtype=torch.long)).view(1,-1)
 
     predicates_features_tensor = torch.cat([arg0_tensor, arg1_tensor, amloc_tensor, amtmp_tensor], 1)
 
@@ -451,7 +451,7 @@ def float_to_tensor(float_num, device):
     :param device: Pytorch device (cpu/gpu)
     :return: a tensor
     '''
-    float_tensor = torch.tensor([float(float_num)], requires_grad=False).to(device).view(1,-1)
+    float_tensor = torch.tensor([float(float_num)], requires_grad=False).view(1,-1)
 
     return float_tensor
 
@@ -648,12 +648,11 @@ def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_e
     :return: semantically-dependent vector of a specific event cluster
     (average of mention's span vectors in the cluster)
     '''
+    bow_vec_len = model.embedding_dim
     if use_char_embeds:
-        bow_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                              requires_grad=requires_grad).to(device).view(1, -1)
-    else:
-        bow_vec = torch.zeros(model.embedding_dim ,
-                              requires_grad=requires_grad).to(device).view(1, -1)
+        bow_vec_len += model.char_hidden_dim
+
+    bow_vec = torch.zeros((1, bow_vec_len), requires_grad=requires_grad)
     for event_mention in event_cluster.mentions.values():
         # creating lexical vector using the head word of each event mention in the cluster
         head = event_mention.mention_head
@@ -667,7 +666,7 @@ def create_event_cluster_bow_lexical_vec(event_cluster,model, device, use_char_e
             cat_tensor = head_tensor
         bow_vec += cat_tensor
 
-    return bow_vec / len(event_cluster.mentions.keys())
+    return bow_vec / len(event_cluster.mentions)
 
 
 def create_entity_cluster_bow_lexical_vec(entity_cluster, model, device, use_char_embeds,
@@ -684,37 +683,31 @@ def create_entity_cluster_bow_lexical_vec(entity_cluster, model, device, use_cha
     :return: semantically-dependent vector of a specific entity cluster
     (average of mention's span vectors in the cluster)
     '''
+    bow_vec_len = model.embedding_dim
     if use_char_embeds:
-        bow_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                              requires_grad=requires_grad).to(device).view(1, -1)
-    else:
-        bow_vec = torch.zeros(model.embedding_dim,
-                              requires_grad=requires_grad).to(device).view(1, -1)
+        bow_vec_len += model.char_hidden_dim
+
+    bow_vec = torch.zeros((1, bow_vec_len), requires_grad=requires_grad)
     for entity_mention in entity_cluster.mentions.values():
         # creating lexical vector using each entity mention in the cluster
-        mention_bow = torch.zeros(model.embedding_dim,
-                                  requires_grad=requires_grad).to(device).view(1, -1)
         mention_embeds = [find_word_embed(token, model, device)
                           for token in entity_mention.get_tokens()
                           if not is_stop(token)]
+
+        mention_bow = torch.mean(torch.stack(mention_embeds), dim=0)
+
         if use_char_embeds:
             char_embeds = get_char_embed(entity_mention.mention_str, model, device)
-
-        for word_tensor in mention_embeds:
-            mention_bow += word_tensor
-
-        mention_bow /= len(entity_mention.get_tokens())
-
-        if use_char_embeds:
             if not requires_grad:
                 char_embeds = char_embeds.detach()
 
             cat_tensor = torch.cat([mention_bow, char_embeds], 1)
         else:
             cat_tensor = mention_bow
+
         bow_vec += cat_tensor
 
-    return bow_vec / len(entity_cluster.mentions.keys())
+    return bow_vec / len(entity_cluster.mentions)
 
 
 def find_mention_cluster_vec(mention_id, clusters):
@@ -739,27 +732,24 @@ def create_event_cluster_bow_arg_vec(event_cluster, entity_clusters, model, devi
     :param model: CDCorefScorer object
     :param device: Pytorch device
     '''
+    zeros = torch.zeros((1, model.embedding_dim + model.char_hidden_dim))
     for event_mention in event_cluster.mentions.values():
-        event_mention.arg0_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        event_mention.arg1_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        event_mention.time_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        event_mention.loc_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
+        event_mention.arg0_vec = zeros
+        event_mention.arg1_vec = zeros
+        event_mention.time_vec = zeros
+        event_mention.loc_vec = zeros
         if event_mention.arg0 is not None:
             arg_vec = find_mention_cluster_vec(event_mention.arg0[1],entity_clusters)
-            event_mention.arg0_vec = arg_vec.to(device)
+            event_mention.arg0_vec = arg_vec
         if event_mention.arg1 is not None:
             arg_vec = find_mention_cluster_vec(event_mention.arg1[1], entity_clusters)
-            event_mention.arg1_vec = arg_vec.to(device)
+            event_mention.arg1_vec = arg_vec
         if event_mention.amtmp is not None:
             arg_vec = find_mention_cluster_vec(event_mention.amtmp[1], entity_clusters)
-            event_mention.time_vec = arg_vec.to(device)
+            event_mention.time_vec = arg_vec
         if event_mention.amloc is not None:
             arg_vec = find_mention_cluster_vec(event_mention.amloc[1], entity_clusters)
-            event_mention.loc_vec = arg_vec.to(device)
+            event_mention.loc_vec = arg_vec
 
 
 def create_entity_cluster_bow_predicate_vec(entity_cluster, event_clusters, model, device):
@@ -771,29 +761,26 @@ def create_entity_cluster_bow_predicate_vec(entity_cluster, event_clusters, mode
     :param model: CDCorefScorer object
     :param device: Pytorch device
     '''
+    zeros = torch.zeros((1, model.embedding_dim + model.char_hidden_dim))
     for entity_mention in entity_cluster.mentions.values():
-        entity_mention.arg0_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        entity_mention.arg1_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        entity_mention.time_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
-        entity_mention.loc_vec = torch.zeros(model.embedding_dim + model.char_hidden_dim,
-                                  requires_grad=False).to(device).view(1, -1)
         predicates_dict = entity_mention.predicates
+        entity_mention.arg0_vec = zeros
+        entity_mention.arg1_vec = zeros
+        entity_mention.time_vec = zeros
+        entity_mention.loc_vec = zeros
         for predicate_id, rel in predicates_dict.items():
             if rel == 'A0':
                 pred_vec = find_mention_cluster_vec(predicate_id[1], event_clusters)
-                entity_mention.arg0_vec = pred_vec.to(device)
+                entity_mention.arg0_vec = pred_vec
             elif rel == 'A1':
                 pred_vec = find_mention_cluster_vec(predicate_id[1], event_clusters)
-                entity_mention.arg1_vec = pred_vec.to(device)
+                entity_mention.arg1_vec = pred_vec
             elif rel == 'AM-TMP':
                 pred_vec = find_mention_cluster_vec(predicate_id[1], event_clusters)
-                entity_mention.time_vec = pred_vec.to(device)
+                entity_mention.time_vec = pred_vec
             elif rel == 'AM-LOC':
                 pred_vec = find_mention_cluster_vec(predicate_id[1], event_clusters)
-                entity_mention.loc_vec = pred_vec.to(device)
+                entity_mention.loc_vec = pred_vec
 
 
 def update_lexical_vectors(clusters, model, device ,is_event, requires_grad):
@@ -923,17 +910,12 @@ def get_mention_span_rep(mention, device, model, docs, is_event, requires_grad):
         char_embeds = get_char_embed(head, model, device)
         mention_span_rep = torch.cat([head_tensor, char_embeds], 1)
     else:
-        mention_bow = torch.zeros(model.embedding_dim, requires_grad=requires_grad).to(device).view(1, -1)
-        mention_embeds = [find_word_embed(token, model, device) for token in mention.get_tokens()
+        mention_embeds = [find_word_embed(token, model, device)
+                          for token in mention.get_tokens()
                           if not is_stop(token)]
 
-        for mention_word_tensor in mention_embeds:
-            mention_bow += mention_word_tensor
+        mention_bow = torch.mean(torch.stack(mention_embeds), dim=0)
         char_embeds = get_char_embed(mention.mention_str, model, device)
-
-        if len(mention_embeds) > 0:
-            mention_bow = mention_bow / float(len(mention_embeds))
-
         mention_span_rep = torch.cat([mention_bow, char_embeds], 1)
 
     if requires_grad:
@@ -999,12 +981,12 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
     catx = []                       # extras to be concat'd
 
     if config_dict['use_contextembed']:
-        cat1.append(mention_1.head_elmo_embeddings.to(device))
-        cat2.append(mention_2.head_elmo_embeddings.to(device))
+        cat1.append(mention_1.head_elmo_embeddings)
+        cat2.append(mention_2.head_elmo_embeddings)
 
     if config_dict['use_sentembed']:
-        cat1.append(mention_1.sent_embeddings.to(device))
-        cat2.append(mention_2.sent_embeddings.to(device))
+        cat1.append(mention_1.sent_embeddings)
+        cat2.append(mention_2.sent_embeddings)
 
     if config_dict['use_args_feats']:
         cat1.extend([mention_1.arg0_vec, mention_1.arg1_vec, mention_1.loc_vec, mention_1.time_vec])
@@ -1022,12 +1004,13 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
         else:
             catx.append(create_predicates_features_vec(mention_1, mention_2, other_clusters, device, model))
 
-    cat1 = [tensor.view(1, -1) for tensor in cat1]
-    cat2 = [tensor.view(1, -1) for tensor in cat2]
+    # cat1 = [tensor.view(1, -1) for tensor in cat1]
+    # cat2 = [tensor.view(1, -1) for tensor in cat2]
     catx = [tensor.view(1, -1) for tensor in catx]
-    mention_pair_tensor = torch.cat([*cat1, *cat2, *catx], 1)
+    # mention_pair_tensor = torch.cat([*cat1, *cat2, *catx], 1)
+    mention_pair_tensor = torch.cat([*catx], 1)
 
-    return mention_pair_tensor.to(device)
+    return mention_pair_tensor
 
 
 def train_pairs_batch_to_model_input(batch_pairs, model, device, topic_docs, is_event,
@@ -1067,8 +1050,8 @@ def train_pairs_batch_to_model_input(batch_pairs, model, device, topic_docs, is_
         q_tensor = float_to_tensor(q, device)
         q_list.append(q_tensor)
 
-    batch_pairs_tensor = torch.cat(tensors_list, 0)
-    q_pairs_tensor = torch.cat(q_list, 0)
+    batch_pairs_tensor = torch.cat(tensors_list, 0).to(device)
+    q_pairs_tensor = torch.cat(q_list, 0).to(device)
 
     return batch_pairs_tensor, q_pairs_tensor
 
@@ -1198,7 +1181,7 @@ def test_pairs_batch_to_model_input(batch_pairs, model, device, topic_docs, is_e
                                                           config_dict=config_dict)
         tensors_list.append(mention_pair_tensor)
 
-    batch_pairs_tensor = torch.cat(tensors_list, 0)
+    batch_pairs_tensor = torch.cat(tensors_list, 0).to(device)
 
     return batch_pairs_tensor
 
@@ -1317,8 +1300,6 @@ def assign_score(cluster_pair, model, device, topic_docs, is_event, other_cluste
         model_scores = model(batch_tensor).detach()
         scores_sum += float(model_scores.sum())
         pairs_count += len(model_scores)
-
-        del batch_tensor
 
     return scores_sum/float(pairs_count)
 

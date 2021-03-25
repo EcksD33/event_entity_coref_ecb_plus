@@ -56,7 +56,7 @@ class CDCorefScorer(nn.Module):
         self.coref_role_embeds = nn.Embedding(2, feature_size)
 
         # Fixed indexers and pretrained embeddings, always in CPU
-        self.CPU = CPUonly(nn.Embedding.from_pretrained(torch.from_numpy(char_embedding), freeze=True),
+        self.CPU = CPUonly(nn.Embedding.from_pretrained(torch.from_numpy(char_embedding)),
                            nn.Embedding.from_pretrained(torch.from_numpy(word_embeds), freeze=True))
         self.char_to_ix = char_to_ix
         self.word_to_ix = word_to_ix
@@ -88,8 +88,8 @@ class CDCorefScorer(nn.Module):
         :param device: gpu/cpu Pytorch device
         :return: initialized hidden states (tensors)
         '''
-        return (torch.randn((1, 1, self.char_hidden_dim), requires_grad=True).to(device),
-                torch.randn((1, 1, self.char_hidden_dim), requires_grad=True).to(device))
+        return (torch.randn((1, 1, self.char_hidden_dim)).to(device),
+                torch.randn((1, 1, self.char_hidden_dim)).to(device))
 
     def get_char_embeds(self, seq, device):
         '''

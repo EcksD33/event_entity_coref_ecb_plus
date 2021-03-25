@@ -31,6 +31,15 @@ def factory_load_embeddings(config_dict):
     print("Loaded embeddings")
 
 
+def _input_dim(dim_str, namespace):
+    allowed_chars = "0123456789+-*/()"
+    dim_str_f = dim_str.format(**namespace)
+    if any([ch not in allowed_chars for ch in dim_str_f]):
+        raise ValueError(f"unexpected character in dimension string {dim_str}")
+
+    return int(eval(dim_str_f))
+
+
 def create_model(config_dict):
     '''
     Given a configuration dictionary, containing flags for configuring the current experiment,
@@ -56,16 +65,16 @@ def create_model(config_dict):
     input_dim = size_per_mention*2     # 2 mentions
 
     if config_dict["use_mult"]:
-        input_dim += size_per_mention  # element-wise mult all in mention
+        input_dim = size_per_mention  # element-wise mult all in mention
     if config_dict["use_diff"]:
         input_dim += size_per_mention  # element-wise diff all in mention
 
     if config_dict["use_binary_feats"]:
         input_dim += 4*config_dict["feature_size"]
 
-    second_dim = int(input_dim / 2)
-    third_dim = second_dim
-    model_dims = [input_dim, second_dim, third_dim]
+    hidden1_dim = _input_dim(config_dict["hidden1_dim"], {'input_dim': input_dim})
+    hidden2_dim = _input_dim(config_dict["hidden2_dim"], {'input_dim': input_dim, 'hidden1_dim': hidden1_dim})
+    model_dims = [input_dim, hidden1_dim, hidden2_dim]
 
     print(f"Model dimensions: {model_dims}")
 
