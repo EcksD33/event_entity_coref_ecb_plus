@@ -18,7 +18,7 @@
 
     "optimizer": "adam",
     "loss": "bce",
-    "lr": 0.001,
+    "lr": 0.0001,
     "momentum": 0,
     "patience": 8,
     "regressor_epochs": 1,
@@ -46,6 +46,6 @@
     "contextembed_size": 1024,
     "sentembed_size": 700,
 
-    "hidden1_dim": "3675",
+    "hidden1_dim": "4261",
     "hidden2_dim": "{hidden1_dim}"
 }

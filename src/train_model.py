@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import shutil
 import random
 import logging
 import argparse
@@ -29,8 +30,15 @@ logging.basicConfig(filename=os.path.join(args.out_dir, "train_log.txt"),
 with open(args.config_path, "r") as js_file:
     config_dict = json.load(js_file)
 
-with open(os.path.join(args.out_dir, "train_config.json"), "w") as js_file:
-    json.dump(config_dict, js_file, indent=4, sort_keys=True)
+# Copy config file to out_dir for reproducibility
+shutil.copyfile(args.config_path, os.path.join(args.out_dir, "train_config.json"))
+
+# Copy experiment-dependent function implementation
+if not os.path.exists(os.path.join(args.out_dir, "mention_pairs_to_input.py")):
+    with open(os.path.join(args.out_dir, "mention_pairs_to_input.py"), "w") as pyfile:
+        from inspect import getsource
+        from all_models.model_utils import mention_pair_to_model_input
+        pyfile.write(getsource(mention_pair_to_model_input))
 
 random.seed(config_dict["random_seed"])
 np.random.seed(config_dict["random_seed"])

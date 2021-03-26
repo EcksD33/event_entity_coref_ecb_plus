@@ -1214,7 +1214,7 @@ def key_with_max_val(d):
     return k[v.index(best_score)], best_score
 
 
-def merge_clusters(pair_to_merge, clusters ,other_clusters, is_event,
+def merge_clusters(pair_to_merge, clusters, other_clusters, is_event,
                    model, device, topic_docs, curr_pairs_dict,
                    config_dict):
     '''
@@ -1256,7 +1256,7 @@ def merge_clusters(pair_to_merge, clusters ,other_clusters, is_event,
     clusters.remove(cluster_j)
     clusters.append(new_cluster)
 
-    update_lexical_vectors([new_cluster], model, device ,is_event, False)
+    update_lexical_vectors([new_cluster], model, device, is_event, False)
     update_args_feature_vectors([new_cluster], other_clusters, model, device, is_event)
 
     new_pairs = []
@@ -1344,8 +1344,8 @@ def merge(clusters, cluster_pairs, other_clusters,model, device, topic_docs, epo
     while True:
         # finds max pair (break if we can't find one  - max score < threshold)
         if len(pairs_dict) < 2:
-            print('Less the 2 clusters had left, stop merging!')
-            logging.info('Less the 2 clusters had left, stop merging!')
+            print('Less than 2 clusters are left, stop merging!')
+            logging.info('Less than 2 clusters are left, stop merging!')
             break
         max_pair, max_score = key_with_max_val(pairs_dict)
 
