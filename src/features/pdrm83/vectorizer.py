@@ -7,15 +7,16 @@ import transformers as ppb
 
 class Vectorizer:
     def __init__(self):
-        self.vectors = []
-
-    def bert(self, sentences, pretrained_weights='distilbert-base-uncased'):
         model_class, tokenizer_class, pretrained_weights = (ppb.DistilBertModel,
                                                             ppb.DistilBertTokenizer,
-                                                            pretrained_weights)
-        tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
-        model = model_class.from_pretrained(pretrained_weights)
-        tokenized = list(map(lambda x: tokenizer.encode(x, add_special_tokens=True), sentences))
+                                                            'distilbert-base-uncased')
+        self.tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
+        self.model = model_class.from_pretrained(pretrained_weights)
+
+        self.vectors = []
+
+    def bert(self, sentences):
+        tokenized = list(map(lambda x: self.tokenizer.encode(x, add_special_tokens=True), sentences))
 
         max_len = 0
         for i in tokenized:
@@ -27,7 +28,7 @@ class Vectorizer:
         # attention_mask = torch.tensor(np.where(padded != 0, 1, 0)).type(torch.LongTensor)
 
         with torch.no_grad():
-            last_hidden_states = model(input_ids)
+            last_hidden_states = self.model(input_ids)
 
         vectors = last_hidden_states[0][:, 0, :].numpy()
         self.vectors = vectors

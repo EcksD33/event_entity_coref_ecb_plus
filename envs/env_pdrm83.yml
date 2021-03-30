@@ -7,7 +7,7 @@ dependencies:
   - pip
   - python
   - perl
-  - pytorch=1.7.1
+  - pytorch=1.8.1
   - gensim
   - transformers=4.2.2
   - spacy

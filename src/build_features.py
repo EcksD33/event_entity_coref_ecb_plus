@@ -745,10 +745,10 @@ def main(args):
         load_elmo_embeddings(dev_set, elmo_embedder, set_pred_mentions=False)
         load_elmo_embeddings(test_set, elmo_embedder, set_pred_mentions=True)
 
-    if config_dict["use_sentembed"]:
+    if config_dict["load_sentembed"]:
         logger.info("Loading sentence embeddings...")
         from features.sentembeds import get_embedder
-        embedder = get_embedder(config_dict["use_sentembed"])
+        embedder = get_embedder(config_dict["load_sentembed"])
         load_sentence_embeddings(train_set, embedder, set_pred_mentions=False)
         load_sentence_embeddings(dev_set, embedder, set_pred_mentions=False)
         load_sentence_embeddings(test_set, embedder, set_pred_mentions=True)

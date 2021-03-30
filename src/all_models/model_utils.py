@@ -313,7 +313,7 @@ def find_word_embed(word, model, device):
         else:
             word_ix = [model.word_to_ix['unk']]
 
-    word_tensor = model.CPU.word_embed(torch.tensor(word_ix, dtype=torch.long))
+    word_tensor = model.onCPU.word_embed(torch.tensor(word_ix, dtype=torch.long))
 
     return word_tensor
 
@@ -381,13 +381,13 @@ def create_args_features_vec(mention_1, mention_2, entity_clusters, device, mode
         if is_system_coref(mention_1.amtmp[1], mention_2.amtmp[1], entity_clusters):
             coref_tmp = 1
 
-    arg0_tensor = model.coref_role_embeds(torch.tensor(coref_a0,
+    arg0_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_a0,
                                                        dtype=torch.long)).view(1,-1)
-    arg1_tensor = model.coref_role_embeds(torch.tensor(coref_a1,
+    arg1_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_a1,
                                                        dtype=torch.long)).view(1,-1)
-    amloc_tensor = model.coref_role_embeds(torch.tensor(coref_loc,
+    amloc_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_loc,
                                                         dtype=torch.long)).view(1,-1)
-    amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_tmp,
+    amtmp_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_tmp,
                                                         dtype=torch.long)).view(1,-1)
 
     args_features_tensor = torch.cat([arg0_tensor, arg1_tensor, amloc_tensor, amtmp_tensor], 1)
@@ -430,13 +430,13 @@ def create_predicates_features_vec(mention_1, mention_2, event_clusters, device,
                 if is_system_coref(predicate_id_1[1], predicate_id_2[1], event_clusters):
                     coref_pred_tmp = 1
 
-    arg0_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a0,
+    arg0_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_pred_a0,
                                                        dtype=torch.long)).view(1,-1)
-    arg1_tensor = model.coref_role_embeds(torch.tensor(coref_pred_a1,
+    arg1_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_pred_a1,
                                                        dtype=torch.long)).view(1,-1)
-    amloc_tensor = model.coref_role_embeds(torch.tensor(coref_pred_loc,
+    amloc_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_pred_loc,
                                                         dtype=torch.long)).view(1,-1)
-    amtmp_tensor = model.coref_role_embeds(torch.tensor(coref_pred_tmp,
+    amtmp_tensor = model.onCPU.coref_role_embeds(torch.tensor(coref_pred_tmp,
                                                         dtype=torch.long)).view(1,-1)
 
     predicates_features_tensor = torch.cat([arg0_tensor, arg1_tensor, amloc_tensor, amtmp_tensor], 1)
@@ -1004,11 +1004,10 @@ def mention_pair_to_model_input(pair, model, device, topic_docs, is_event, requi
         else:
             catx.append(create_predicates_features_vec(mention_1, mention_2, other_clusters, device, model))
 
-    # cat1 = [tensor.view(1, -1) for tensor in cat1]
-    # cat2 = [tensor.view(1, -1) for tensor in cat2]
+    cat1 = [tensor.view(1, -1) for tensor in cat1]
+    cat2 = [tensor.view(1, -1) for tensor in cat2]
     catx = [tensor.view(1, -1) for tensor in catx]
-    # mention_pair_tensor = torch.cat([*cat1, *cat2, *catx], 1)
-    mention_pair_tensor = torch.cat([*catx], 1)
+    mention_pair_tensor = torch.cat([*cat1, *cat2, *catx], 1)
 
     return mention_pair_tensor
 

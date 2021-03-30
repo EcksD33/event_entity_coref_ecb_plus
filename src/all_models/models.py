@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from collections import namedtuple
 
 
-CPUonly = namedtuple('CPUonly', ['char_embed', 'word_embed'])
+CPUonly = namedtuple('CPUonly', ['char_embed', 'word_embed', 'coref_role_embeds'])
 
 
 class CDCorefScorer(nn.Module):
@@ -47,17 +47,18 @@ class CDCorefScorer(nn.Module):
         self.embedding_dim = word_embeds.shape[1]
         self.char_hidden_dim = char_rep_size
 
+        # self.char_embed = nn.Embedding.from_pretrained(torch.from_numpy(char_embedding), freeze=False)
         self.char_lstm = nn.LSTM(input_size=char_embedding.shape[1],
                                  hidden_size=self.char_hidden_dim,
                                  num_layers=1,
                                  bidirectional=False)
-
         # binary features for coreferring arguments/predicates
-        self.coref_role_embeds = nn.Embedding(2, feature_size)
+        # self.coref_role_embeds = nn.Embedding(2, feature_size)
 
         # Fixed indexers and pretrained embeddings, always in CPU
-        self.CPU = CPUonly(nn.Embedding.from_pretrained(torch.from_numpy(char_embedding)),
-                           nn.Embedding.from_pretrained(torch.from_numpy(word_embeds), freeze=True))
+        self.onCPU = CPUonly(nn.Embedding.from_pretrained(torch.from_numpy(char_embedding.copy()), freeze=False),
+                             nn.Embedding.from_pretrained(torch.from_numpy(word_embeds.copy()), freeze=True),
+                             nn.Embedding(2, feature_size))
         self.char_to_ix = char_to_ix
         self.word_to_ix = word_to_ix
 
@@ -100,7 +101,7 @@ class CDCorefScorer(nn.Module):
         '''
         char_hidden = self.init_char_hidden(device)
         input_char_seq = self.prepare_chars_seq(seq)
-        char_embeds = self.CPU.char_embed(input_char_seq).view(len(seq), 1, -1).to(device)
+        char_embeds = self.onCPU.char_embed(input_char_seq).view(len(seq), 1, -1).to(device)
         char_lstm_out, char_hidden = self.char_lstm(char_embeds, char_hidden)
         char_vec = char_lstm_out[-1]
 

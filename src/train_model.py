@@ -34,11 +34,14 @@ with open(args.config_path, "r") as js_file:
 shutil.copyfile(args.config_path, os.path.join(args.out_dir, "train_config.json"))
 
 # Copy experiment-dependent function implementation
-if not os.path.exists(os.path.join(args.out_dir, "mention_pairs_to_input.py")):
-    with open(os.path.join(args.out_dir, "mention_pairs_to_input.py"), "w") as pyfile:
+try:
+    with open(os.path.join(args.out_dir, "mention_pairs_to_input.py"), "x") as pyfile:
         from inspect import getsource
         from all_models.model_utils import mention_pair_to_model_input
         pyfile.write(getsource(mention_pair_to_model_input))
+        print("'mention_pairs_to_input.py' has been saved.")
+except FileExistsError:
+    print("WARNING: 'mention_pairs_to_input.py' already exists in out folder.")
 
 random.seed(config_dict["random_seed"])
 np.random.seed(config_dict["random_seed"])

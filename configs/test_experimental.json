@@ -1,7 +1,7 @@
 {
-  "test_path": "out/featurex/test_data",
-  "cd_event_model_path": "out/train/cd_event_best_model",
-  "cd_entity_model_path": "out/train/cd_entity_best_model",
+  "test_path": "out/celento/featurex/test_data",
+  "cd_event_model_path": "out/celento/train/cd_event_best_model",
+  "cd_entity_model_path": "out/celento/train/cd_entity_best_model",
   "gpu_num": 0,
   "event_merge_threshold": 0.5,
   "entity_merge_threshold": 0.5,

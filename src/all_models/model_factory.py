@@ -65,7 +65,7 @@ def create_model(config_dict):
     input_dim = size_per_mention*2     # 2 mentions
 
     if config_dict["use_mult"]:
-        input_dim = size_per_mention  # element-wise mult all in mention
+        input_dim += size_per_mention  # element-wise mult all in mention
     if config_dict["use_diff"]:
         input_dim += size_per_mention  # element-wise diff all in mention
 
